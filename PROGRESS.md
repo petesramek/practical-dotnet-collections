@@ -70,7 +70,7 @@
 - [x] concurrent-deduplication (ConcurrentDictionary)
 - [x] undo-redo (Stack)
 - [x] sliding-window-buffer (Queue)
-- [ ] priority-processing (PriorityQueue)
+- [x] priority-processing (PriorityQueue)
 
 ## Advanced Topics
 - [ ] large-object-heap (LOH)
