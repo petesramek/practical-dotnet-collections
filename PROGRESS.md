@@ -28,7 +28,7 @@
 
 ## Frozen Collections
 - [x] FrozenSet<T>
-- [ ] FrozenDictionary<TKey, TValue>
+- [x] FrozenDictionary<TKey, TValue>
 
 ## Specialized Collections
 - [ ] PriorityQueue<TElement, TPriority>
