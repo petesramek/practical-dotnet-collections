@@ -57,7 +57,7 @@
 - [x] linkedlist-add-vs-list-insert
 - [x] queue-vs-list-removeat
 - [x] stack-vs-list-end-ops
-- [ ] list-capacity-benchmark
+- [x] list-capacity-benchmark
 - [ ] immutable-builder-benchmark
 - [ ] failed-lookup-benchmark
 
