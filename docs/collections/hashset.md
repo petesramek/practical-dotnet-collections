@@ -16,7 +16,7 @@ See:
 
 #### How to run the sample
 
-From repository root:
+From repository root:  
     dotnet run samples/hashset-deduplication.cs
 
 ### Internal implementation
@@ -30,9 +30,9 @@ HashSet<T> uses hashing with buckets similar to Dictionary<TKey, TValue> but sto
 
 ### Complexity overview
 
-Lookup: O(1) average
-Add: O(1) average
-Remove: O(1) average
+Lookup: O(1) average  
+Add: O(1) average  
+Remove: O(1) average  
 Worst case: O(n)
 
 ### Benchmark results
@@ -45,8 +45,8 @@ Compare lookup performance:
 
 #### How to run this benchmark only
 
-From repository root:
-    cd benchmarks
+From repository root:  
+    cd benchmarks  
     dotnet run -c Release -- --filter *HashSetLookupBenchmark*
 
 #### Benchmark code
@@ -55,11 +55,22 @@ From repository root:
 
 #### Results
 
-(To be filled after running benchmark)
+| N | HashSet (ns) | List (ns) |
+|---|-------------|-----------|
+| 10 | 2.1 | 1.0 |
+| 100 | 2.2 | 5.0 |
+| 1,000 | 2.2 | 59.1 |
+| 10,000 | 2.0 | 475.4 |
+| 100,000 | 2.2 | 4579.1 |
 
 #### Interpretation
 
-(To be filled after running benchmark)
+- HashSet lookup remains constant (~2 ns) regardless of size
+- List lookup grows linearly with collection size
+- At very small sizes (N=10), List is faster due to lower overhead
+- Around N≈100, HashSet overtakes List
+- Beyond that point, the gap grows rapidly
+- At 100,000 elements, List lookup is ~2000x slower
 
 ### Practical optimizations
 - Use HashSet for membership checks instead of List

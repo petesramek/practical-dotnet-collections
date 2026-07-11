@@ -1,9 +1,9 @@
-﻿# Progress
+# Progress
 
 ## Collections
 - [ ] list
-- [ ] dictionary
-- [ ] hashset
+- [x] dictionary
+- [x] hashset
 - [ ] linkedlist
 - [ ] queue
 - [ ] stack
@@ -14,9 +14,9 @@
 - [ ] hashset-vs-list-lookup
 
 ## Benchmarks
-- [ ] dictionary-lookup
+- [x] dictionary-vs-list-lookup
+- [x] hashset-vs-list-lookup
 - [ ] list-vs-linkedlist-iteration
-- [ ] hashset-vs-list-lookup
 
 ## Scenarios
 - [ ] caching
