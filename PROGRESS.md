@@ -14,7 +14,7 @@
 
 ## Concurrent Collections
 - [x] ConcurrentDictionary<TKey, TValue>
-- [ ] ConcurrentQueue<T>
+- [x] ConcurrentQueue<T>
 - [ ] ConcurrentStack<T>
 - [ ] ConcurrentBag<T>
 - [ ] BlockingCollection<T>
