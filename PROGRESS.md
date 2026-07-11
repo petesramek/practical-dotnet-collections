@@ -17,7 +17,7 @@
 - [x] ConcurrentQueue<T>
 - [x] ConcurrentStack<T>
 - [x] ConcurrentBag<T>
-- [ ] BlockingCollection<T>
+- [x] BlockingCollection<T>
 - [ ] Channel<T>
 
 ## Immutable Collections
