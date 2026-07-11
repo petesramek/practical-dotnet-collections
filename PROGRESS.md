@@ -27,7 +27,7 @@
 - [x] ImmutableDictionary<TKey, TValue>
 
 ## Frozen Collections
-- [ ] FrozenSet<T>
+- [x] FrozenSet<T>
 - [ ] FrozenDictionary<TKey, TValue>
 
 ## Specialized Collections
