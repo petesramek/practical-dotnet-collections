@@ -22,7 +22,7 @@
 
 ## Immutable Collections
 - [x] ImmutableArray<T>
-- [ ] ImmutableList<T>
+- [x] ImmutableList<T>
 - [ ] ImmutableHashSet<T>
 - [ ] ImmutableDictionary<TKey, TValue>
 
