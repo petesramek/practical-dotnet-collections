@@ -13,7 +13,7 @@
 - [x] SortedDictionary<TKey, TValue>
 
 ## Concurrent Collections
-- [ ] ConcurrentDictionary<TKey, TValue>
+- [x] ConcurrentDictionary<TKey, TValue>
 - [ ] ConcurrentQueue<T>
 - [ ] ConcurrentStack<T>
 - [ ] ConcurrentBag<T>
