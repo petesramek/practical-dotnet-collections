@@ -39,11 +39,6 @@
 - [x] ReadOnlyDictionary<TKey, TValue>
 - [x] BitArray
 
-## Performance Primitives (Advanced)
-- [ ] ArrayPool<T>
-- [ ] Span<T>
-- [ ] ReadOnlySpan<T>
-
 ## Comparisons
 - [ ] list-vs-linkedlist
 - [ ] dictionary-vs-sorteddictionary
