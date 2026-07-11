@@ -37,7 +37,7 @@
 ## Wrapper & Specialized Types
 - [x] ReadOnlyCollection<T>
 - [ ] ReadOnlyDictionary<TKey, TValue>
-- [ ] BitArray
+- [x] BitArray
 
 ## Performance Primitives (Advanced)
 - [ ] ArrayPool<T>
