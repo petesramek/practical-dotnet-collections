@@ -11,7 +11,7 @@
 ## Comparisons
 - [ ] list-vs-linkedlist
 - [ ] dictionary-vs-sorteddictionary
-- [ ] hashset-vs-list-lookup
+- [x] hashset-vs-list-lookup
 
 ## Benchmarks
 - [x] dictionary-vs-list-lookup
