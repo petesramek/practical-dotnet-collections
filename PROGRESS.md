@@ -48,7 +48,7 @@
 - [x] channel-vs-blockingcollection
 - [x] sorteddictionary-vs-sortedlist
 - [x] dictionary-vs-frozendictionary
-- [ ] hashset-vs-frozenset
+- [x] hashset-vs-frozenset
 
 ## Benchmarks
 - [x] dictionary-vs-list-lookup
