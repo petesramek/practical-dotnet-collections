@@ -24,7 +24,7 @@
 - [x] ImmutableArray<T>
 - [x] ImmutableList<T>
 - [x] ImmutableHashSet<T>
-- [ ] ImmutableDictionary<TKey, TValue>
+- [x] ImmutableDictionary<TKey, TValue>
 
 ## Frozen Collections
 - [ ] FrozenSet<T>
