@@ -73,5 +73,5 @@
 - [x] priority-processing (PriorityQueue)
 
 ## Advanced Topics
-- [ ] large-object-heap (LOH)
-- [ ] struct-dictionary-keys (boxing)
+- [x] large-object-heap (LOH)
+- [x] struct-dictionary-keys (boxing)
