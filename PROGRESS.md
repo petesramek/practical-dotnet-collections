@@ -40,7 +40,7 @@
 - [x] BitArray
 
 ## Comparisons
-- [ ] list-vs-linkedlist
+- [x] list-vs-linkedlist
 - [ ] dictionary-vs-sorteddictionary
 - [ ] hashset-vs-list-lookup
 - [ ] immutablearray-vs-immutablelist
