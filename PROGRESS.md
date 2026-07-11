@@ -66,7 +66,7 @@
 - [x] deduplication
 - [x] producer-consumer
 - [x] configuration-caching (FrozenDictionary)
-- [ ] async-pipeline (Channel)
+- [x] async-pipeline (Channel)
 - [ ] concurrent-deduplication (ConcurrentDictionary)
 - [ ] undo-redo (Stack)
 - [ ] sliding-window-buffer (Queue)
