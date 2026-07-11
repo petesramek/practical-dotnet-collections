@@ -47,7 +47,7 @@
 - [x] list-default-vs-capacity
 - [x] channel-vs-blockingcollection
 - [x] sorteddictionary-vs-sortedlist
-- [ ] dictionary-vs-frozendictionary
+- [x] dictionary-vs-frozendictionary
 - [ ] hashset-vs-frozenset
 
 ## Benchmarks
