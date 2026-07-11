@@ -59,7 +59,7 @@
 - [x] stack-vs-list-end-ops
 - [x] list-capacity-benchmark
 - [x] immutable-builder-benchmark
-- [ ] failed-lookup-benchmark
+- [x] failed-lookup-benchmark
 
 ## Scenarios
 - [x] caching
