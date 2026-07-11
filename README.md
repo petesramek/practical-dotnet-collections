@@ -8,28 +8,28 @@ A practical, performance-focused guide to choosing the right .NET collection bas
 
 | Requirement | Use |
 |------------|-----|
-| Dynamic list | List<T> |
-| Key lookup | Dictionary<TKey, TValue> |
-| Existence checks | HashSet<T> |
-| FIFO processing | Queue<T> |
-| LIFO processing | Stack<T> |
-| Sorted key-value (dynamic) | SortedDictionary<TKey, TValue> |
-| Sorted key-value (read-heavy) | SortedList<TKey, TValue> |
-| Sorted values | SortedSet<T> |
-| Thread-safe key-value | ConcurrentDictionary<TKey, TValue> |
-| Async pipeline | Channel<T> |
-| Blocking pipeline | BlockingCollection<T> |
-| Immutable read-heavy | ImmutableArray<T> |
-| Immutable structural updates | ImmutableList<T> |
-| Static lookup | FrozenDictionary<TKey, TValue> |
-| Static set | FrozenSet<T> |
-| Priority processing | PriorityQueue<TElement, TPriority> |
+| Dynamic list | `List<T>` |
+| Key lookup | `Dictionary<TKey, TValue>` |
+| Existence checks | `HashSet<T>` |
+| FIFO processing | `Queue<T>` |
+| LIFO processing | `Stack<T>` |
+| Sorted key-value (dynamic) | `SortedDictionary<TKey, TValue>` |
+| Sorted key-value (read-heavy) | `SortedList<TKey, TValue>` |
+| Sorted values | `SortedSet<T>` |
+| Thread-safe key-value | `ConcurrentDictionary<TKey, TValue>` |
+| Async pipeline | `Channel<T>` |
+| Blocking pipeline | `BlockingCollection<T>` |
+| Immutable read-heavy | `ImmutableArray<T>` |
+| Immutable structural updates | `ImmutableList<T>` |
+| Static lookup | `FrozenDictionary<TKey, TValue>` |
+| Static set | `FrozenSet<T>` |
+| Priority processing | `PriorityQueue<TElement, TPriority>` |
 
 ---
 
 ## Decision Flow
 
-`mermaid
+```mermaid
 flowchart TD
     A[Start] --> B{Thread-safe / Shared?}
 
@@ -63,7 +63,7 @@ flowchart TD
     U -->|Priority| X[PriorityQueue]
     U -->|Sorted values| Y[SortedSet]
     U -->|Indexed/default| Z[List]
-`
+```
 
 ---
 
@@ -107,51 +107,57 @@ flowchart TD
 
 ## Common Mistakes
 
-### Using List<T> for lookup
+### Using `List<T>` for lookup
 
-`csharp
+```csharp
 list.Contains(x);
-`
+```
+
+This is `O(n)`.
 
 Use:
 
-`csharp
+```csharp
 var set = new HashSet<T>(list);
 set.Contains(x);
-`
+```
 
 ---
 
-### ImmutableArray<T> in loops
+### `ImmutableArray<T>` in loops
 
-`csharp
+```csharp
 array = array.Add(x);
-`
+```
+
+Allocates on every iteration.
 
 Use:
 
-`csharp
+```csharp
 var builder = ImmutableArray.CreateBuilder<T>();
 builder.Add(x);
-`
+```
 
 ---
 
 ### Missing capacity
 
-`csharp
+```csharp
 var list = new List<T>();
-`
+```
+
+Triggers resizing.
 
 Use:
 
-`csharp
+```csharp
 var list = new List<T>(N);
-`
+```
 
 ---
 
-### Struct keys without IEquatable<T>
+### Struct keys without `IEquatable<T>`
 
 Causes boxing and hidden allocations.
 
@@ -159,9 +165,9 @@ Causes boxing and hidden allocations.
 
 ## Rule of Thumb
 
-- Start with List<T> or Dictionary<TKey, TValue>
+- Start with `List<T>` or `Dictionary<TKey, TValue>`
 - Preallocate when size is known
-- Use HashSet<T> for lookup-heavy workloads
+- Use `HashSet<T>` for lookup-heavy workloads
 
 ---
 
@@ -172,4 +178,3 @@ Causes boxing and hidden allocations.
 - Benchmarks
 - Scenarios
 - Advanced topics
-
