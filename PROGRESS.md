@@ -23,7 +23,7 @@
 ## Immutable Collections
 - [x] ImmutableArray<T>
 - [x] ImmutableList<T>
-- [ ] ImmutableHashSet<T>
+- [x] ImmutableHashSet<T>
 - [ ] ImmutableDictionary<TKey, TValue>
 
 ## Frozen Collections
