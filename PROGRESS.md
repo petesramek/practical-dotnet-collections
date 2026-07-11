@@ -21,7 +21,7 @@
 - [x] Channel<T>
 
 ## Immutable Collections
-- [ ] ImmutableArray<T>
+- [x] ImmutableArray<T>
 - [ ] ImmutableList<T>
 - [ ] ImmutableHashSet<T>
 - [ ] ImmutableDictionary<TKey, TValue>
