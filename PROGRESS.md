@@ -35,7 +35,7 @@
 - [x] PriorityQueue<TElement, TPriority>
 
 ## Wrapper & Specialized Types
-- [ ] ReadOnlyCollection<T>
+- [x] ReadOnlyCollection<T>
 - [ ] ReadOnlyDictionary<TKey, TValue>
 - [ ] BitArray
 
