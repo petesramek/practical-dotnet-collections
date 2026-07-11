@@ -11,7 +11,7 @@
 ## Sorted Collections
 - [x] SortedSet<T>
 - [x] SortedDictionary<TKey, TValue>
-- [ ] SortedList<TKey, TValue>
+- [x] SortedList<TKey, TValue>
 
 ## Concurrent Collections
 - [x] ConcurrentDictionary<TKey, TValue>
