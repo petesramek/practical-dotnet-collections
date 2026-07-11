@@ -9,7 +9,7 @@
 - [x] Stack<T>
 
 ## Sorted Collections
-- [ ] SortedSet<T>
+- [x] SortedSet<T>
 - [ ] SortedDictionary<TKey, TValue>
 
 ## Concurrent Collections
