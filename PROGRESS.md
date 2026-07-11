@@ -4,7 +4,7 @@
 - [x] list
 - [x] dictionary
 - [x] hashset
-- [ ] linkedlist
+- [x] linkedlist
 - [ ] queue
 - [ ] stack
 
