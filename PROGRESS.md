@@ -11,6 +11,7 @@
 ## Sorted Collections
 - [x] SortedSet<T>
 - [x] SortedDictionary<TKey, TValue>
+- [ ] SortedList<TKey, TValue>
 
 ## Concurrent Collections
 - [x] ConcurrentDictionary<TKey, TValue>
@@ -33,10 +34,26 @@
 ## Specialized Collections
 - [x] PriorityQueue<TElement, TPriority>
 
+## Wrapper & Specialized Types
+- [ ] ReadOnlyCollection<T>
+- [ ] ReadOnlyDictionary<TKey, TValue>
+- [ ] BitArray
+
+## Performance Primitives (Advanced)
+- [ ] ArrayPool<T>
+- [ ] Span<T>
+- [ ] ReadOnlySpan<T>
+
 ## Comparisons
 - [ ] list-vs-linkedlist
 - [ ] dictionary-vs-sorteddictionary
 - [ ] hashset-vs-list-lookup
+- [ ] immutablearray-vs-immutablelist
+- [ ] list-default-vs-capacity
+- [ ] channel-vs-blockingcollection
+- [ ] sorteddictionary-vs-sortedlist
+- [ ] dictionary-vs-frozendictionary
+- [ ] hashset-vs-frozenset
 
 ## Benchmarks
 - [x] dictionary-vs-list-lookup
@@ -45,8 +62,21 @@
 - [x] linkedlist-add-vs-list-insert
 - [x] queue-vs-list-removeat
 - [x] stack-vs-list-end-ops
+- [ ] list-capacity-benchmark
+- [ ] immutable-builder-benchmark
+- [ ] failed-lookup-benchmark
 
 ## Scenarios
 - [x] caching
 - [x] deduplication
-- [ ] producer-consumer
+- [x] producer-consumer
+- [ ] configuration-caching (FrozenDictionary)
+- [ ] async-pipeline (Channel)
+- [ ] concurrent-deduplication (ConcurrentDictionary)
+- [ ] undo-redo (Stack)
+- [ ] sliding-window-buffer (Queue)
+- [ ] priority-processing (PriorityQueue)
+
+## Advanced Topics
+- [ ] large-object-heap (LOH)
+- [ ] struct-dictionary-keys (boxing)
