@@ -46,7 +46,7 @@
 - [x] immutablearray-vs-immutablelist
 - [x] list-default-vs-capacity
 - [x] channel-vs-blockingcollection
-- [ ] sorteddictionary-vs-sortedlist
+- [x] sorteddictionary-vs-sortedlist
 - [ ] dictionary-vs-frozendictionary
 - [ ] hashset-vs-frozenset
 
