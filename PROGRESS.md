@@ -43,7 +43,7 @@
 - [x] list-vs-linkedlist
 - [x] dictionary-vs-sorteddictionary
 - [x] hashset-vs-list-lookup
-- [ ] immutablearray-vs-immutablelist
+- [x] immutablearray-vs-immutablelist
 - [ ] list-default-vs-capacity
 - [ ] channel-vs-blockingcollection
 - [ ] sorteddictionary-vs-sortedlist
