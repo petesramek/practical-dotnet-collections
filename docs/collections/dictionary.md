@@ -14,7 +14,7 @@ It provides near constant-time access to values based on a unique key.
 ## Sample usage
 
 See:
-`/samples/dictionary-caching.cs`
+[samples/dictionary-caching.cs](../../samples/dictionary-caching.cs)
 
 ### How to run the sample
 
@@ -67,7 +67,7 @@ dotnet run -c Release -- --filter *DictionaryLookupBenchmark*
 
 ### Benchmark code
 
-`/benchmarks/Lookup/DictionaryLookupBenchmark.cs`
+[benchmarks/Lookup/DictionaryLookupBenchmark.cs](../../benchmarks/Lookup/DictionaryLookupBenchmark.cs)
 
 ### Results
 

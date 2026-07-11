@@ -12,7 +12,7 @@
 ## Sample usage
 
 See:
-`/samples/hashset-deduplication.cs`
+[samples/hashset-deduplication.cs](../../samples/hashset-deduplication.cs)
 
 ### How to run the sample
 
@@ -65,7 +65,7 @@ dotnet run -c Release -- --filter *HashSetLookupBenchmark*
 
 ### Benchmark code
 
-`/benchmarks/Lookup/HashSetLookupBenchmark.cs`
+[benchmarks/Lookup/HashSetLookupBenchmark.cs](../../benchmarks/Lookup/HashSetLookupBenchmark.cs)
 
 ### Results
 
