@@ -58,7 +58,7 @@
 - [x] queue-vs-list-removeat
 - [x] stack-vs-list-end-ops
 - [x] list-capacity-benchmark
-- [ ] immutable-builder-benchmark
+- [x] immutable-builder-benchmark
 - [ ] failed-lookup-benchmark
 
 ## Scenarios
