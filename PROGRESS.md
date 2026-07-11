@@ -6,7 +6,7 @@
 - [x] hashset
 - [x] linkedlist
 - [x] queue
-- [ ] stack
+- [x] stack
 
 ## Comparisons
 - [ ] list-vs-linkedlist
