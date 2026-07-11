@@ -1,7 +1,7 @@
 # Progress
 
 ## Collections
-- [ ] list
+- [x] list
 - [x] dictionary
 - [x] hashset
 - [ ] linkedlist
