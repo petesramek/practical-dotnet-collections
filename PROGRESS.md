@@ -69,7 +69,7 @@
 - [x] async-pipeline (Channel)
 - [x] concurrent-deduplication (ConcurrentDictionary)
 - [x] undo-redo (Stack)
-- [ ] sliding-window-buffer (Queue)
+- [x] sliding-window-buffer (Queue)
 - [ ] priority-processing (PriorityQueue)
 
 ## Advanced Topics
