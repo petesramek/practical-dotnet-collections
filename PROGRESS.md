@@ -42,7 +42,7 @@
 ## Comparisons
 - [x] list-vs-linkedlist
 - [x] dictionary-vs-sorteddictionary
-- [ ] hashset-vs-list-lookup
+- [x] hashset-vs-list-lookup
 - [ ] immutablearray-vs-immutablelist
 - [ ] list-default-vs-capacity
 - [ ] channel-vs-blockingcollection
