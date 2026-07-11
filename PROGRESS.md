@@ -1,24 +1,52 @@
 # Progress
 
-## Collections
-- [x] list
-- [x] dictionary
-- [x] hashset
-- [x] linkedlist
-- [x] queue
-- [x] stack
+## Core Collections
+- [x] List<T>
+- [x] Dictionary<TKey, TValue>
+- [x] HashSet<T>
+- [x] LinkedList<T>
+- [x] Queue<T>
+- [x] Stack<T>
+
+## Sorted Collections
+- [ ] SortedSet<T>
+- [ ] SortedDictionary<TKey, TValue>
+
+## Concurrent Collections
+- [ ] ConcurrentDictionary<TKey, TValue>
+- [ ] ConcurrentQueue<T>
+- [ ] ConcurrentStack<T>
+- [ ] ConcurrentBag<T>
+- [ ] BlockingCollection<T>
+- [ ] Channel<T>
+
+## Immutable Collections
+- [ ] ImmutableArray<T>
+- [ ] ImmutableList<T>
+- [ ] ImmutableHashSet<T>
+- [ ] ImmutableDictionary<TKey, TValue>
+
+## Frozen Collections
+- [ ] FrozenSet<T>
+- [ ] FrozenDictionary<TKey, TValue>
+
+## Specialized Collections
+- [ ] PriorityQueue<TElement, TPriority>
 
 ## Comparisons
 - [ ] list-vs-linkedlist
 - [ ] dictionary-vs-sorteddictionary
-- [x] hashset-vs-list-lookup
+- [ ] hashset-vs-list-lookup
 
 ## Benchmarks
 - [x] dictionary-vs-list-lookup
 - [x] hashset-vs-list-lookup
-- [ ] list-vs-linkedlist-iteration
+- [x] list-add-vs-insert
+- [x] linkedlist-add-vs-list-insert
+- [x] queue-vs-list-removeat
+- [x] stack-vs-list-end-ops
 
 ## Scenarios
-- [ ] caching
-- [ ] deduplication
+- [x] caching
+- [x] deduplication
 - [ ] producer-consumer
