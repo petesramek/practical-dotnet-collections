@@ -31,7 +31,7 @@
 - [x] FrozenDictionary<TKey, TValue>
 
 ## Specialized Collections
-- [ ] PriorityQueue<TElement, TPriority>
+- [x] PriorityQueue<TElement, TPriority>
 
 ## Comparisons
 - [ ] list-vs-linkedlist
