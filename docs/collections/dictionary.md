@@ -10,8 +10,6 @@ It provides near constant-time access to values based on a unique key.
 - ID → entity lookup (e.g. userId → user)
 - Deduplication with associated data
 - Indexing data for fast access  
-Example from this repository:
-- /samples/dictionary-caching.cs
 
 ## Sample usage
   
@@ -65,10 +63,6 @@ Compare lookup performance:
 From repository root:  
     cd benchmarks  
     dotnet run -c Release -- --filter *DictionaryLookupBenchmark*
-
-Notes:
-- Runs only the Dictionary lookup benchmark
-- Output is stored in BenchmarkDotNet.Artifacts
 
 ### Benchmark code
   
