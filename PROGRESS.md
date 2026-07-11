@@ -68,7 +68,7 @@
 - [x] configuration-caching (FrozenDictionary)
 - [x] async-pipeline (Channel)
 - [x] concurrent-deduplication (ConcurrentDictionary)
-- [ ] undo-redo (Stack)
+- [x] undo-redo (Stack)
 - [ ] sliding-window-buffer (Queue)
 - [ ] priority-processing (PriorityQueue)
 
