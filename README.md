@@ -17,7 +17,7 @@ A practical, performance-focused guide to choosing the right .NET collection bas
 
 | Requirement | Use |
 |------------|-----|
-| Dynamic list | `List<T>` |
+| Dynamic list of items | `List<T>` |
 | Key lookup | `Dictionary<TKey, TValue>` |
 | Existence checks | `HashSet<T>` |
 | FIFO processing | `Queue<T>` |
@@ -37,6 +37,13 @@ A practical, performance-focused guide to choosing the right .NET collection bas
 ---
 
 ## Decision Flow
+
+Decision is made in this order:
+
+1. Thread safety
+2. Data lifetime (mutable vs immutable vs static)
+3. Access pattern (lookup vs sequential)
+4. Ordering requirements
 
 ```mermaid
 flowchart TD
