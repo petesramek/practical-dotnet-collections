@@ -69,7 +69,7 @@ flowchart TD
     U -->|Last-In, First-Out stack| W[Stack]
     U -->|By custom priority ranking| X[PriorityQueue]
     U -->|Keep values sorted automatically| Y[SortedSet]
-    U -->|Direct index lookup like items[i]| Z[List]
+    U -->|Direct index lookup like items| Z[List]
 ```
 
 ---
