@@ -14,7 +14,7 @@ Backed by an int[]. Each integer stores 32 boolean values using bit masks. Acces
 
 ## Memory characteristics
 - Extremely compact (32 flags per int)
-- Much smaller than ool[]
+- Much smaller than bool[]
 - Slight CPU overhead for bit operations
 
 ## Complexity overview
@@ -28,7 +28,7 @@ Write: O(1)
 
 Compare dense vs standard boolean storage:
 - BitArray
-- ool[]
+- bool[]
 
 ### How to run this benchmark only
 
@@ -51,7 +51,7 @@ dotnet run -c Release -- --filter *BitArrayBenchmark*
 
 ## Practical optimizations
 - Use when tracking large number of flags
-- Prefer over ool[] when memory matters
+- Prefer over bool[] when memory matters
 
 ## Common mistakes
 - Using for small datasets (overkill)
@@ -62,7 +62,7 @@ dotnet run -c Release -- --filter *BitArrayBenchmark*
 - Memory-sensitive systems
 
 ## When I would avoid it
-- Small collections → use ool[]
+- Small collections → use bool[]
 
 ## Rule of thumb
 
