@@ -1,26 +1,29 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Columns;
-using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Reports;
-using BenchmarkDotNet.Running;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
+/// <summary>
+/// Benchmarks comparing <see cref="BlockingCollection{T}"/> and <see cref="ConcurrentQueue{T}"/>.
+/// Evaluates raw concurrent throughput alongside behavior under heavy downstream consumption bottlenecks.
+/// </summary>
 [MemoryDiagnoser]
 public class BlockingCollectionBenchmark {
     private const int ProducerCount = 4;
     private const int ConsumerCount = 2;
     private const int BoundedLimit = 500;
 
-    public static int LatestConcurrentQueuePeak;
-    public static int LatestBlockingCollectionPeak;
-
+    /// <summary>
+    /// The total number of items sent through the messaging pipelines.
+    /// </summary>
     [Params(10_000, 50_000)]
     public int N;
 
+    /// <summary>
+    /// Measures raw concurrent throughput of a standard ConcurrentQueue when threads flow freely.
+    /// </summary>
     [Benchmark]
     public void ThroughputConcurrentQueue() {
         var queue = new ConcurrentQueue<int>();
@@ -52,6 +55,9 @@ public class BlockingCollectionBenchmark {
         Task.WaitAll(consumers);
     }
 
+    /// <summary>
+    /// Measures raw concurrent throughput of a bounded BlockingCollection when threads flow freely.
+    /// </summary>
     [Benchmark]
     public void ThroughputBlockingCollection() {
         using var pipeline = new BlockingCollection<int>(boundedCapacity: BoundedLimit);
@@ -79,10 +85,12 @@ public class BlockingCollectionBenchmark {
         Task.WaitAll(consumers);
     }
 
+    /// <summary>
+    /// Measures execution time for an unconstrained concurrent queue during a severe worker bottleneck.
+    /// </summary>
     [Benchmark]
     public void BackpressureConcurrentQueue() {
         var queue = new ConcurrentQueue<int>();
-        int peakCount = 0;
         long totalConsumed = 0;
 
         var consumer = Task.Run(() => {
@@ -97,20 +105,18 @@ public class BlockingCollectionBenchmark {
         var producer = Task.Run(() => {
             for (int i = 0; i < N; i++) {
                 queue.Enqueue(i);
-                int currentCount = queue.Count;
-                if (currentCount > peakCount)
-                    peakCount = currentCount;
             }
         });
 
         Task.WaitAll(producer, consumer);
-        LatestConcurrentQueuePeak = peakCount;
     }
 
+    /// <summary>
+    /// Measures execution time for a bounded blocking collection during a severe worker bottleneck.
+    /// </summary>
     [Benchmark]
     public void BackpressureBlockingCollection() {
         using var pipeline = new BlockingCollection<int>(boundedCapacity: BoundedLimit);
-        int peakCount = 0;
 
         var consumer = Task.Run(() => {
             foreach (var _ in pipeline.GetConsumingEnumerable()) {
@@ -121,14 +127,10 @@ public class BlockingCollectionBenchmark {
         var producer = Task.Run(() => {
             for (int i = 0; i < N; i++) {
                 pipeline.Add(i);
-                int currentCount = pipeline.Count;
-                if (currentCount > peakCount)
-                    peakCount = currentCount;
             }
             pipeline.CompleteAdding();
         });
 
         Task.WaitAll(producer, consumer);
-        LatestBlockingCollectionPeak = peakCount;
     }
 }
