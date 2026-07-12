@@ -140,54 +140,17 @@ flowchart TD
 - [SortedDictionary](./docs/collections/sorteddictionary.md) — Fast-updating binary tree sorted key-value map.
 - [SortedSet](./docs/collections/sortedset.md) — Automatically sorted unique values element tree.
 
-### Concurrent / Thread-Safe
-- [ConcurrentDictionary](./docs/collections/concurrentdictionary.md) — Thread-safe concurrent map storage.
-- [ConcurrentQueue](./docs/collections/concurrentqueue.md) — Thread-safe dynamic FIFO queue.
-- [ConcurrentStack](./docs/collections/concurrentstack.md) — Thread-safe dynamic LIFO stack.
-- [ConcurrentBag](./docs/collections/concurrentbag.md) — Thread-safe unordered object storage wrapper.
-- [BlockingCollection](./docs/collections/blockingcollection.md) — Thread-safe blocking pipeline coordinator.
-- [Channel](./docs/collections/channel.md) — Async producer-consumer high-performance messaging.
-
-### Immutable (Structural Sharing)
-- [ImmutableArray](./docs/collections/immutablearray.md) — Value-type array wrapper optimized for high-speed reads.
-- [ImmutableList](./docs/collections/immutablelist.md) — Tree-backed structure for balanced copy modifications.
-- [ImmutableHashSet](./docs/collections/immutablehashset.md) — Safe immutable snapshot validation set.
-- [ImmutableDictionary](./docs/collections/immutabledictionary.md) — Safe immutable snapshot tree key-to-value map.
-
-### Highly Specialized
-- [PriorityQueue](./docs/collections/priorityqueue.md) — Sorts elements dynamically by custom rank metadata.
-- [FrozenDictionary](./docs/collections/frozendictionary.md) — Fixed map built once at startup for max read speed.
-- [FrozenSet](./docs/collections/frozenset.md) — Fixed set built once at startup for max read speed.
-- [BitArray](./docs/collections/bitarray.md) — Highly compact packed collection managing boolean flag bits.
-
-### Protected Read-Only Wrappers
-- [ReadOnlyCollection](./docs/collections/readonlycollection.md) — Prevents mutations while tracking live list adjustments.
-- [ReadOnlyDictionary](./docs/collections/readonlydictionary.md) — Prevents mutations while tracking live map adjustments.
-
----
-
-## Learn More
-
-- [Comparisons](./docs/comparisons/)
-- [Scenarios](./docs/scenarios/)
-- [Benchmarks](./benchmarks/)
-- [Advanced topics](./docs/advanced/)
-
----
-
-## Rules of Thumb
-
-### General Defaults
-- **Start with `List<T>` or `Dictionary<TKey, TValue>`:** These are your default, versatile workhorses for everyday business logic.
-- **Preallocate immediately:** If you know (or can roughly estimate) the final count, always pass the capacity parameter to the constructor `new List<T>(N)` to stop CPU-heavy memory resizing.
-- **Switch to `HashSet<T>` for scanning workloads:** If you ever find yourself calling `.Contains()` inside a loop against a standard list, stop and convert that collection into a `HashSet<T>`.
-
 ### Concurrency & Pipelines
-- **Use `Channel<T>` for cross-thread data streams:** If you are passing data between threads asynchronously, default to channels. They are significantly faster and produce fewer allocations than older thread-safe alternatives.
-- **Save `ConcurrentDictionary` for state caching:** Only use it when multiple threads actively need to read, write, and update a single shared state map simultaneously.
+- [Channel](./docs/collections/channel.md) — High-performance async producer–consumer messaging streams.
+- [BlockingCollection](./docs/collections/blockingcollection.md) — Multi-threaded thread-safe blocking pipeline messaging boundary.
+- [ConcurrentDictionary](./docs/collections/concurrentdictionary.md) — Multi-threaded shared state caching and unique map storage.
 
 ### Static Data & Memory
-- **Use `Frozen` collections for app configuration:** If your data is built once at application startup (like JSON configs, dependency setups, or static codes) and read millions of times, use a `FrozenDictionary` or `FrozenSet`. 
-- **Use `Immutable` structures for functional code snapshots:** If your data never changes but you frequently need to thread-safely emit slightly altered *copies* of it, choose `Immutable` collections. Use `ImmutableArray` if you mostly read, and `ImmutableList` if you constantly modify.
-- **Use `ReadOnly` wrappers only to hide class internals:** Use these strictly to shield public APIs. They do not prevent the underlying data from changing; they just prevent external code from doing the changing.
-
+- [FrozenDictionary](./docs/collections/frozendictionary.md) — App configuration lookup map created once at application startup.
+- [FrozenSet](./docs/collections/frozenset.md) — Fixed membership verification pool optimized for maximum read performance.
+- [ImmutableArray](./docs/collections/immutablearray.md) — Thread-safe, unchangeable array layout optimized for raw indexing lookups.
+- [ImmutableList](./docs/collections/immutablelist.md) — Functional code sequence snapshots optimized for frequent structural updates.
+- [ImmutableDictionary](./docs/collections/immutabledictionary.md) — Thread-safe, unchangeable key-value data storage.
+- [ImmutableHashSet](./docs/collections/immutablehashset.md) — Thread-safe, unchangeable set of unique elements.
+- [ReadOnlyCollection](./docs/collections/readonlycollection.md) — Defensive shielding proxy view tracking a dynamic underlying list.
+- [ReadOnlyDictionary](./docs/collections/readonlydictionary.md) — Defensive shielding proxy view tracking dynamic key-value data.
