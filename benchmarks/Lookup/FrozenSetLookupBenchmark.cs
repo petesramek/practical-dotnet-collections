@@ -1,13 +1,10 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
 using System.Collections.Frozen;
-using System.Linq;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class FrozenSetLookupBenchmark
-{
+public class FrozenSetLookupBenchmark {
     private FrozenSet<int> _frozen = null!;
     private HashSet<int> _hash = null!;
 
@@ -15,8 +12,7 @@ public class FrozenSetLookupBenchmark
     public int N;
 
     [GlobalSetup]
-    public void Setup()
-    {
+    public void Setup() {
         var data = Enumerable.Range(0, N);
         _frozen = data.ToFrozenSet();
         _hash = data.ToHashSet();

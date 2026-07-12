@@ -4,14 +4,12 @@ using System.Collections.Immutable;
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class ImmutableBuilderBenchmark
-{
+public class ImmutableBuilderBenchmark {
     [Params(10, 100, 1_000, 10_000)]
     public int N;
 
     [Benchmark]
-    public ImmutableArray<int> ImmutableArray_Add_Loop()
-    {
+    public ImmutableArray<int> ImmutableArray_Add_Loop() {
         var array = ImmutableArray<int>.Empty;
 
         for (int i = 0; i < N; i++)
@@ -21,8 +19,7 @@ public class ImmutableBuilderBenchmark
     }
 
     [Benchmark]
-    public ImmutableArray<int> ImmutableArray_Builder()
-    {
+    public ImmutableArray<int> ImmutableArray_Builder() {
         var builder = ImmutableArray.CreateBuilder<int>(N);
 
         for (int i = 0; i < N; i++)
@@ -32,8 +29,7 @@ public class ImmutableBuilderBenchmark
     }
 
     [Benchmark]
-    public ImmutableList<int> ImmutableList_Add_Loop()
-    {
+    public ImmutableList<int> ImmutableList_Add_Loop() {
         var list = ImmutableList<int>.Empty;
 
         for (int i = 0; i < N; i++)

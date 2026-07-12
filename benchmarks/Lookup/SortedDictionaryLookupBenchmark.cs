@@ -1,11 +1,9 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class SortedDictionaryLookupBenchmark
-{
+public class SortedDictionaryLookupBenchmark {
     private SortedDictionary<int, int> _sorted = null!;
     private Dictionary<int, int> _dict = null!;
 
@@ -13,13 +11,11 @@ public class SortedDictionaryLookupBenchmark
     public int N;
 
     [GlobalSetup]
-    public void Setup()
-    {
+    public void Setup() {
         _sorted = new SortedDictionary<int, int>();
         _dict = new Dictionary<int, int>();
 
-        for (int i = 0; i < N; i++)
-        {
+        for (int i = 0; i < N; i++) {
             _sorted[i] = i;
             _dict[i] = i;
         }

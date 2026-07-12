@@ -1,17 +1,14 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class StackPushPopBenchmark
-{
+public class StackPushPopBenchmark {
     [Params(10, 100, 1_000, 10_000, 100_000)]
     public int N;
 
     [Benchmark]
-    public void StackPushPop()
-    {
+    public void StackPushPop() {
         var stack = new Stack<int>();
 
         for (int i = 0; i < N; i++)
@@ -22,8 +19,7 @@ public class StackPushPopBenchmark
     }
 
     [Benchmark]
-    public void ListAddRemoveFromEnd()
-    {
+    public void ListAddRemoveFromEnd() {
         var list = new List<int>();
 
         for (int i = 0; i < N; i++)

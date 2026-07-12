@@ -1,18 +1,15 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class ImmutableHashSetBenchmark
-{
+public class ImmutableHashSetBenchmark {
     [Params(10, 100, 1_000, 10_000)]
     public int N;
 
     [Benchmark]
-    public ImmutableHashSet<int> ImmutableHashSetAdd()
-    {
+    public ImmutableHashSet<int> ImmutableHashSetAdd() {
         var set = ImmutableHashSet<int>.Empty;
 
         for (int i = 0; i < N; i++)
@@ -22,8 +19,7 @@ public class ImmutableHashSetBenchmark
     }
 
     [Benchmark]
-    public HashSet<int> HashSetAdd()
-    {
+    public HashSet<int> HashSetAdd() {
         var set = new HashSet<int>();
 
         for (int i = 0; i < N; i++)

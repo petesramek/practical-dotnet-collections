@@ -1,17 +1,14 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class QueueDequeueBenchmark
-{
+public class QueueDequeueBenchmark {
     [Params(10, 100, 1_000, 10_000, 100_000)]
     public int N;
 
     [Benchmark]
-    public void QueueEnqueueDequeue()
-    {
+    public void QueueEnqueueDequeue() {
         var queue = new Queue<int>();
 
         for (int i = 0; i < N; i++)
@@ -22,8 +19,7 @@ public class QueueDequeueBenchmark
     }
 
     [Benchmark]
-    public void ListRemoveAtBeginning()
-    {
+    public void ListRemoveAtBeginning() {
         var list = new List<int>();
 
         for (int i = 0; i < N; i++)

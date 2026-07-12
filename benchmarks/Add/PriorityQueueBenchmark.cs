@@ -1,17 +1,14 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class PriorityQueueBenchmark
-{
+public class PriorityQueueBenchmark {
     [Params(10, 100, 1_000, 10_000)]
     public int N;
 
     [Benchmark]
-    public void PriorityQueueEnqueueDequeue()
-    {
+    public void PriorityQueueEnqueueDequeue() {
         var pq = new PriorityQueue<int, int>();
 
         for (int i = 0; i < N; i++)
@@ -22,8 +19,7 @@ public class PriorityQueueBenchmark
     }
 
     [Benchmark]
-    public void ListSort()
-    {
+    public void ListSort() {
         var list = new List<int>();
 
         for (int i = 0; i < N; i++)

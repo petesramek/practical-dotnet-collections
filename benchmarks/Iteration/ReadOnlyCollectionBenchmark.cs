@@ -1,12 +1,10 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class ReadOnlyCollectionBenchmark
-{
+public class ReadOnlyCollectionBenchmark {
     private List<int> _list = null!;
     private ReadOnlyCollection<int> _readOnly = null!;
 
@@ -14,8 +12,7 @@ public class ReadOnlyCollectionBenchmark
     public int N;
 
     [GlobalSetup]
-    public void Setup()
-    {
+    public void Setup() {
         _list = new List<int>(N);
         for (int i = 0; i < N; i++)
             _list.Add(i);
@@ -24,8 +21,7 @@ public class ReadOnlyCollectionBenchmark
     }
 
     [Benchmark]
-    public int IterateList()
-    {
+    public int IterateList() {
         var sum = 0;
         foreach (var item in _list)
             sum += item;
@@ -33,8 +29,7 @@ public class ReadOnlyCollectionBenchmark
     }
 
     [Benchmark]
-    public int IterateReadOnlyCollection()
-    {
+    public int IterateReadOnlyCollection() {
         var sum = 0;
         foreach (var item in _readOnly)
             sum += item;

@@ -1,11 +1,9 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class SortedSetLookupBenchmark
-{
+public class SortedSetLookupBenchmark {
     private SortedSet<int> _sorted = null!;
     private HashSet<int> _hash = null!;
 
@@ -13,13 +11,11 @@ public class SortedSetLookupBenchmark
     public int N;
 
     [GlobalSetup]
-    public void Setup()
-    {
+    public void Setup() {
         _sorted = new SortedSet<int>();
         _hash = new HashSet<int>();
 
-        for (int i = 0; i < N; i++)
-        {
+        for (int i = 0; i < N; i++) {
             _sorted.Add(i);
             _hash.Add(i);
         }

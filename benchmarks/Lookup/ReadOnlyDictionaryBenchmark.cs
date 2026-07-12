@@ -1,12 +1,10 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class ReadOnlyDictionaryBenchmark
-{
+public class ReadOnlyDictionaryBenchmark {
     private Dictionary<int, int> _dict = null!;
     private ReadOnlyDictionary<int, int> _readOnly = null!;
 
@@ -14,8 +12,7 @@ public class ReadOnlyDictionaryBenchmark
     public int N;
 
     [GlobalSetup]
-    public void Setup()
-    {
+    public void Setup() {
         _dict = new Dictionary<int, int>(N);
         for (int i = 0; i < N; i++)
             _dict[i] = i;

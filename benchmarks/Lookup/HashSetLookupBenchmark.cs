@@ -1,12 +1,9 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class HashSetLookupBenchmark
-{
+public class HashSetLookupBenchmark {
     private HashSet<int> _set = null!;
     private List<int> _list = null!;
 
@@ -14,8 +11,7 @@ public class HashSetLookupBenchmark
     public int N;
 
     [GlobalSetup]
-    public void Setup()
-    {
+    public void Setup() {
         _set = Enumerable.Range(0, N).ToHashSet();
         _list = Enumerable.Range(0, N).ToList();
     }

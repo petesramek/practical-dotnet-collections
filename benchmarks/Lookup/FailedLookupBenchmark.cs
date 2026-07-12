@@ -1,12 +1,9 @@
 using BenchmarkDotNet.Attributes;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class FailedLookupBenchmark
-{
+public class FailedLookupBenchmark {
     private List<int> _list = null!;
     private HashSet<int> _set = null!;
     private Dictionary<int, int> _dict = null!;
@@ -17,8 +14,7 @@ public class FailedLookupBenchmark
     private int _missing;
 
     [GlobalSetup]
-    public void Setup()
-    {
+    public void Setup() {
         _list = Enumerable.Range(0, N).ToList();
         _set = new HashSet<int>(_list);
         _dict = _list.ToDictionary(x => x, x => x);
