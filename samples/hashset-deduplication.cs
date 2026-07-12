@@ -1,15 +1,22 @@
 using System;
 using System.Collections.Generic;
 
-// Input with duplicates (e.g. imported data)
-var input = new[] { 1, 2, 1, 3, 2, 4, 3, 5 };
+// Setup a raw dataset containing redundant information (e.g., duplicate log entries or user IDs).
+int[] rawImportedUserIds = new int[] { 101, 102, 101, 103, 102, 104, 103, 105 };
 
-// Track processed items
-var seen = new HashSet<int>();
+// Initialize a unique hash pool.
+var processedRecordsPool = new HashSet<int>();
 
-foreach (var item in input) {
-    if (!seen.Add(item))
-        continue; // already processed
+foreach (int userId in rawImportedUserIds) {
+    // USE CASE: Atomic check-and-insert uniqueness filtering.
+    // Instead of executing an expensive double lookup (calling '.Contains()' followed by '.Add()'),
+    // '.Add()' returns a boolean status directly: True if the element is unique and added successfully,
+    // or False if the element already exists within the internal hash buckets.
+    if (!processedRecordsPool.Add(userId)) {
+        // Skip duplicate records instantly without triggering execution overhead
+        Console.WriteLine($"[Duplicate Ignored] User ID {userId} has already been processed.");
+        continue;
+    }
 
-    Console.WriteLine($"Processing {item}");
+    Console.WriteLine($"[Unique Processed] Handling data payload for User ID: {userId}");
 }
