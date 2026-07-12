@@ -1,43 +1,134 @@
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Columns;
+using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Reports;
+using BenchmarkDotNet.Running;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PracticalDotNetCollections.Benchmarks;
 
 [MemoryDiagnoser]
-public class BlockingCollectionBenchmark
-{
-    [Params(10, 100, 1_000, 10_000)]
+public class BlockingCollectionBenchmark {
+    private const int ProducerCount = 4;
+    private const int ConsumerCount = 2;
+    private const int BoundedLimit = 500;
+
+    public static int LatestConcurrentQueuePeak;
+    public static int LatestBlockingCollectionPeak;
+
+    [Params(10_000, 50_000)]
     public int N;
 
     [Benchmark]
-    public void BlockingCollectionProducerConsumer()
-    {
-        var collection = new BlockingCollection<int>(boundedCapacity: N);
+    public void ThroughputConcurrentQueue() {
+        var queue = new ConcurrentQueue<int>();
+        int eventsPerProducer = N / ProducerCount;
+        long totalConsumed = 0;
 
-        var producer = Task.Run(() =>
-        {
-            for (int i = 0; i < N; i++)
-                collection.Add(i);
+        var consumers = new Task[ConsumerCount];
+        for (int i = 0; i < ConsumerCount; i++) {
+            consumers[i] = Task.Run(() => {
+                while (Interlocked.Read(ref totalConsumed) < N) {
+                    if (queue.TryDequeue(out _)) {
+                        Interlocked.Increment(ref totalConsumed);
+                        Thread.SpinWait(10);
+                    }
+                }
+            });
+        }
 
-            collection.CompleteAdding();
-        });
+        var producers = new Task[ProducerCount];
+        for (int i = 0; i < ProducerCount; i++) {
+            producers[i] = Task.Run(() => {
+                for (int j = 0; j < eventsPerProducer; j++) {
+                    queue.Enqueue(j);
+                }
+            });
+        }
 
-        var consumer = Task.Run(() =>
-        {
-            foreach (var item in collection.GetConsumingEnumerable()) { }
-        });
-
-        Task.WaitAll(producer, consumer);
+        Task.WaitAll(producers);
+        Task.WaitAll(consumers);
     }
 
     [Benchmark]
-    public void ConcurrentQueueNoBlocking()
-    {
+    public void ThroughputBlockingCollection() {
+        using var pipeline = new BlockingCollection<int>(boundedCapacity: BoundedLimit);
+        int eventsPerProducer = N / ProducerCount;
+
+        var consumers = new Task[ConsumerCount];
+        for (int i = 0; i < ConsumerCount; i++) {
+            consumers[i] = Task.Run(() => {
+                foreach (var _ in pipeline.GetConsumingEnumerable()) {
+                    Thread.SpinWait(10);
+                }
+            });
+        }
+
+        var producers = new Task[ProducerCount];
+        for (int i = 0; i < ProducerCount; i++) {
+            producers[i] = Task.Run(() => {
+                for (int j = 0; j < eventsPerProducer; j++) {
+                    pipeline.Add(j);
+                }
+            });
+        }
+
+        Task.WhenAll(producers).ContinueWith(_ => pipeline.CompleteAdding());
+        Task.WaitAll(consumers);
+    }
+
+    [Benchmark]
+    public void BackpressureConcurrentQueue() {
         var queue = new ConcurrentQueue<int>();
+        int peakCount = 0;
+        long totalConsumed = 0;
 
-        Parallel.For(0, N, i => queue.Enqueue(i));
+        var consumer = Task.Run(() => {
+            while (Interlocked.Read(ref totalConsumed) < N) {
+                if (queue.TryDequeue(out _)) {
+                    Interlocked.Increment(ref totalConsumed);
+                    Thread.SpinWait(500);
+                }
+            }
+        });
 
-        while (queue.TryDequeue(out _)) { }
+        var producer = Task.Run(() => {
+            for (int i = 0; i < N; i++) {
+                queue.Enqueue(i);
+                int currentCount = queue.Count;
+                if (currentCount > peakCount)
+                    peakCount = currentCount;
+            }
+        });
+
+        Task.WaitAll(producer, consumer);
+        LatestConcurrentQueuePeak = peakCount;
+    }
+
+    [Benchmark]
+    public void BackpressureBlockingCollection() {
+        using var pipeline = new BlockingCollection<int>(boundedCapacity: BoundedLimit);
+        int peakCount = 0;
+
+        var consumer = Task.Run(() => {
+            foreach (var _ in pipeline.GetConsumingEnumerable()) {
+                Thread.SpinWait(500);
+            }
+        });
+
+        var producer = Task.Run(() => {
+            for (int i = 0; i < N; i++) {
+                pipeline.Add(i);
+                int currentCount = pipeline.Count;
+                if (currentCount > peakCount)
+                    peakCount = currentCount;
+            }
+            pipeline.CompleteAdding();
+        });
+
+        Task.WaitAll(producer, consumer);
+        LatestBlockingCollectionPeak = peakCount;
     }
 }
