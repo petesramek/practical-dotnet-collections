@@ -1,40 +1,34 @@
 using System;
 using System.Collections.Generic;
 
-// Simulated data source (e.g. database)
-var database = new Dictionary<int, string> {
-    [1] = "Alice",
-    [2] = "Bob",
-    [3] = "Charlie"
+// Setup a baseline data cache using a standard hash map layout.
+var userProfileCache = new Dictionary<int, string>();
+
+// Define external variables to represent a backing system dependency.
+var mockDatabase = new Dictionary<int, string> {
+    [101] = "Alice",
+    [102] = "Bob",
+    [103] = "Charlie"
 };
+int databaseFetchCount = 0;
 
-// Track how many times we hit the data source
-var fetchCount = 0;
+// Repeated mock requests executing against our localized gateway system.
+int[] incomingRequestUserIds = new int[] { 101, 102, 101, 103, 102, 101 };
 
-string FetchUserName(int userId) {
-    fetchCount++;
-    return database[userId];
+foreach (int userId in incomingRequestUserIds) {
+    // USE CASE: High-speed single-pass lookup cache entry validation.
+    // Instead of calling '.ContainsKey()' followed by the indexer accessor '_cache[id]',
+    // '.TryGetValue()' validates presence and extracts the value in a single hash evaluation step.
+    if (!userProfileCache.TryGetValue(userId, out string? cachedName)) {
+        // Cache Miss: Simulate executing a heavy external data store query
+        databaseFetchCount++;
+        cachedName = mockDatabase[userId];
+
+        // Store the extracted record back into our localized dictionary cache
+        userProfileCache[userId] = cachedName;
+    }
+
+    Console.WriteLine($"Retrieved User: {cachedName}");
 }
 
-// Cache
-var cache = new Dictionary<int, string>();
-
-string GetUserName(int userId) {
-    if (cache.TryGetValue(userId, out var value))
-        return value;
-
-    value = FetchUserName(userId);
-    cache[userId] = value;
-
-    return value;
-}
-
-// Repeated lookup pattern
-var ids = new[] { 1, 2, 1, 3, 2, 1 };
-
-foreach (var id in ids) {
-    Console.WriteLine(GetUserName(id));
-}
-
-Console.WriteLine();
-Console.WriteLine($"FetchUserName called: {fetchCount} times");
+Console.WriteLine($"\nTotal Backing Store Interactions Saved: {incomingRequestUserIds.Length - databaseFetchCount}");
