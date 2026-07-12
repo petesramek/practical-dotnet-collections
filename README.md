@@ -71,72 +71,70 @@ flowchart TD
 
 ### Collections
 - [List](./docs/collections/list.md)
+- [LinkedList](./docs/collections/linkedlist.md)
+- [Queue](./docs/collections/queue.md)
+- [Stack](./docs/collections/stack.md)
 - [Dictionary](./docs/collections/dictionary.md)
 - [HashSet](./docs/collections/hashset.md)
+- [SortedList](./docs/collections/sortedlist.md)
+- [SortedDictionary](./docs/collections/sorteddictionary.md)
+- [SortedSet](./docs/collections/sortedset.md)
 
-### Comparisons
-- [List vs LinkedList](./docs/comparisons/list-vs-linkedlist.md)
-- [Dictionary vs SortedDictionary](./docs/comparisons/dictionary-vs-sorteddictionary.md)
-- [HashSet vs List](./docs/comparisons/hashset-vs-list-lookup.md)
-- [ImmutableArray vs ImmutableList](./docs/comparisons/immutablearray-vs-immutablelist.md)
-- [List capacity](./docs/comparisons/list-default-vs-capacity.md)
-- [Channel vs BlockingCollection](./docs/comparisons/channel-vs-blockingcollection.md)
-- [SortedDictionary vs SortedList](./docs/comparisons/sorteddictionary-vs-sortedlist.md)
-- [Dictionary vs FrozenDictionary](./docs/comparisons/dictionary-vs-frozendictionary.md)
-- [HashSet vs FrozenSet](./docs/comparisons/hashset-vs-frozenset.md)
+### Concurrent
+- [ConcurrentDictionary](./docs/collections/concurrentdictionary.md)
+- [ConcurrentQueue](./docs/collections/concurrentqueue.md)
+- [ConcurrentStack](./docs/collections/concurrentstack.md)
+- [ConcurrentBag](./docs/collections/concurrentbag.md)
+- [BlockingCollection](./docs/collections/blockingcollection.md)
+- [Channel](./docs/collections/channel.md)
 
-### Scenarios
-- [Configuration caching](./docs/scenarios/configuration-caching.md)
-- [Async pipeline](./docs/scenarios/async-pipeline.md)
-- [Concurrent deduplication](./docs/scenarios/concurrent-deduplication.md)
-- [Undo / Redo](./docs/scenarios/undo-redo.md)
-- [Sliding window buffer](./docs/scenarios/sliding-window-buffer.md)
-- [Priority processing](./docs/scenarios/priority-processing.md)
+### Immutable
+- [ImmutableArray](./docs/collections/immutablearray.md)
+- [ImmutableList](./docs/collections/immutablelist.md)
+- [ImmutableHashSet](./docs/collections/immutablehashset.md)
+- [ImmutableDictionary](./docs/collections/immutabledictionary.md)
 
-### Benchmarks
-- [BitArray benchmark](./benchmarks/Memory/BitArrayBenchmark.cs)
-- [List capacity benchmark](./benchmarks/Memory/ListCapacityBenchmark.cs)
-- [Immutable builder benchmark](./benchmarks/Memory/ImmutableBuilderBenchmark.cs)
-- [Failed lookup benchmark](./benchmarks/Lookup/FailedLookupBenchmark.cs)
+### Specialized
+- [PriorityQueue](./docs/collections/priorityqueue.md)
+- [FrozenDictionary](./docs/collections/frozendictionary.md)
+- [FrozenSet](./docs/collections/frozenset.md)
+- [BitArray](./docs/collections/bitarray.md)
 
-### Advanced
-- [Large Object Heap](./docs/advanced/large-object-heap.md)
-- [Struct dictionary keys](./docs/advanced/struct-dictionary-keys.md)
+### Read-only
+- [ReadOnlyCollection](./docs/collections/readonlycollection.md)
+- [ReadOnlyDictionary](./docs/collections/readonlydictionary.md)
 
 ---
 
 ## Common Mistakes
 
-### Using `List<T>` for lookup
+### Using `List<T>` for frequent lookups
 
 ```csharp
-list.Contains(x);
+// 🚫 Bad: Forces .NET to scan elements sequentially from start to finish
+if (list.Contains(x))
+{
+    // ...
+}
 ```
 
-This is `O(n)`.
-
-Use:
-
-```csharp
-var set = new HashSet<T>(list);
-set.Contains(x);
-```
+Use `HashSet<T>` as a persistent state container for existence tracking instead.
 
 ---
 
-### `ImmutableArray<T>` in loops
+### Modifying `ImmutableArray<T>` inside loops
 
 ```csharp
+// 🚫 Bad: Allocates a new array copy on every iteration
 array = array.Add(x);
 ```
 
-Allocates on every iteration.
-
-Use:
+Use a builder:
 
 ```csharp
 var builder = ImmutableArray.CreateBuilder<T>();
 builder.Add(x);
+var result = builder.ToImmutable();
 ```
 
 ---
