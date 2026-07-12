@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections.Concurrent;
 
-namespace PracticalDotNetCollections.Benchmarks;
+namespace PracticalDotNetCollections.Benchmarks.Concurrency;
 
 /// <summary>
 /// Benchmarks evaluating <see cref="ConcurrentBag{T}"/> against a thread-safe locked <see cref="List{T}"/> and <see cref="ConcurrentQueue{T}"/>.

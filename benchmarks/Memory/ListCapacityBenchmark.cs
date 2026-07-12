@@ -1,6 +1,6 @@
 using BenchmarkDotNet.Attributes;
 
-namespace PracticalDotNetCollections.Benchmarks;
+namespace PracticalDotNetCollections.Benchmarks.Memory;
 
 [MemoryDiagnoser]
 public class ListCapacityBenchmark {

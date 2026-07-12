@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections.ObjectModel;
 
-namespace PracticalDotNetCollections.Benchmarks;
+namespace PracticalDotNetCollections.Benchmarks.Lookup;
 
 [MemoryDiagnoser]
 public class ReadOnlyDictionaryBenchmark {

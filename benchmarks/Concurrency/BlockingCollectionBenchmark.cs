@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections.Concurrent;
 
-namespace PracticalDotNetCollections.Benchmarks;
+namespace PracticalDotNetCollections.Benchmarks.Concurrency;
 
 /// <summary>
 /// Benchmarks comparing <see cref="BlockingCollection{T}"/> and <see cref="ConcurrentQueue{T}"/>.

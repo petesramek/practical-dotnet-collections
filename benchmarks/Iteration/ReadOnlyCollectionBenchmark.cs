@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections.ObjectModel;
 
-namespace PracticalDotNetCollections.Benchmarks;
+namespace PracticalDotNetCollections.Benchmarks.Iteration;
 
 [MemoryDiagnoser]
 public class ReadOnlyCollectionBenchmark {

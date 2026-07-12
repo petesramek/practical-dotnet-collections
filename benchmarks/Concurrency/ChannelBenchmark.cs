@@ -2,7 +2,7 @@ using BenchmarkDotNet.Attributes;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 
-namespace PracticalDotNetCollections.Benchmarks;
+namespace PracticalDotNetCollections.Benchmarks.Concurrency;
 
 /// <summary>
 /// Benchmarks comparing asynchronous <see cref="Channel{T}"/> and synchronous <see cref="BlockingCollection{T}"/>.

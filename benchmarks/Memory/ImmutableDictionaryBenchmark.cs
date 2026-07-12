@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections.Immutable;
 
-namespace PracticalDotNetCollections.Benchmarks;
+namespace PracticalDotNetCollections.Benchmarks.Memory;
 
 [MemoryDiagnoser]
 public class ImmutableDictionaryBenchmark {

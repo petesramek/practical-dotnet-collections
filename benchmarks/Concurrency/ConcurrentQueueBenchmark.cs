@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections.Concurrent;
 
-namespace PracticalDotNetCollections.Benchmarks;
+namespace PracticalDotNetCollections.Benchmarks.Concurrency;
 
 /// <summary>
 /// Benchmarks evaluating <see cref="ConcurrentQueue{T}"/> performance against a locked standard <see cref="Queue{T}"/>.

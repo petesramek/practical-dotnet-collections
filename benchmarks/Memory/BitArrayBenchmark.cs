@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections;
 
-namespace PracticalDotNetCollections.Benchmarks;
+namespace PracticalDotNetCollections.Benchmarks.Memory;
 
 /// <summary>
 /// Benchmarks comparing <see cref="BitArray"/> and <see cref="bool"/> arrays.
