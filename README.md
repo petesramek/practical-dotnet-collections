@@ -49,6 +49,7 @@ Decision is made in this order:
 3. Access pattern (lookup vs sequential)
 4. Ordering requirements
 
+```mermaid
 flowchart TD
     A[Start] --> B{Thread-safe / Shared}
 
