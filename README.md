@@ -4,6 +4,15 @@ A practical, performance-focused guide to choosing the right .NET collection bas
 
 ---
 
+## How to use this guide
+
+- Use the decision matrix for quick answers
+- Use the decision flow when unsure
+- Use collection pages for detailed behavior
+- Use comparisons and scenarios for trade-offs and real-world usage
+
+---
+
 ## Quick Decision Matrix
 
 | Requirement | Use |
@@ -67,15 +76,84 @@ flowchart TD
 
 ---
 
-## Documentation
+## Common Mistakes
 
-### Collections
+### Using `List<T>` for frequent lookups
+
+```csharp
+// Bad: Forces .NET to scan elements sequentially from start to finish
+if (list.Contains(x))
+{
+    // ...
+}
+```
+
+Use `HashSet<T>` as a persistent state container created once and reused for lookups.
+
+---
+
+### Modifying `ImmutableArray<T>` inside loops
+
+```csharp
+// Bad: Creates a new ImmutableArray instance on every iteration
+ImmutableArray<int> items = ImmutableArray<int>.Empty;
+
+foreach (var x in source)
+{
+    items = items.Add(x);
+}
+```
+
+Each `Add()` creates a new array instance under the hood.
+
+Use a builder:
+
+```csharp
+var builder = ImmutableArray.CreateBuilder<int>();
+
+foreach (var x in source)
+{
+    builder.Add(x);
+}
+
+var items = builder.ToImmutable();
+```
+
+---
+
+### Missing capacity
+
+```csharp
+var list = new List<T>();
+```
+
+Triggers repeated resizing.
+
+Use:
+
+```csharp
+var list = new List<T>(N);
+```
+
+---
+
+### Struct keys without `IEquatable<T>`
+
+Causes boxing and hidden allocations.
+
+---
+
+## Collections
+
+### Core
 - [List](./docs/collections/list.md)
 - [LinkedList](./docs/collections/linkedlist.md)
 - [Queue](./docs/collections/queue.md)
 - [Stack](./docs/collections/stack.md)
 - [Dictionary](./docs/collections/dictionary.md)
 - [HashSet](./docs/collections/hashset.md)
+
+### Sorted
 - [SortedList](./docs/collections/sortedlist.md)
 - [SortedDictionary](./docs/collections/sorteddictionary.md)
 - [SortedSet](./docs/collections/sortedset.md)
@@ -106,58 +184,12 @@ flowchart TD
 
 ---
 
-## Common Mistakes
+## Learn More
 
-### Using `List<T>` for frequent lookups
-
-```csharp
-// 🚫 Bad: Forces .NET to scan elements sequentially from start to finish
-if (list.Contains(x))
-{
-    // ...
-}
-```
-
-Use `HashSet<T>` as a persistent state container for existence tracking instead.
-
----
-
-### Modifying `ImmutableArray<T>` inside loops
-
-```csharp
-// 🚫 Bad: Allocates a new array copy on every iteration
-array = array.Add(x);
-```
-
-Use a builder:
-
-```csharp
-var builder = ImmutableArray.CreateBuilder<T>();
-builder.Add(x);
-var result = builder.ToImmutable();
-```
-
----
-
-### Missing capacity
-
-```csharp
-var list = new List<T>();
-```
-
-Triggers resizing.
-
-Use:
-
-```csharp
-var list = new List<T>(N);
-```
-
----
-
-### Struct keys without `IEquatable<T>`
-
-Causes boxing and hidden allocations.
+- [Comparisons](./docs/comparisons/)
+- [Scenarios](./docs/scenarios/)
+- [Benchmarks](./benchmarks/)
+- [Advanced topics](./docs/advanced/)
 
 ---
 
@@ -165,14 +197,4 @@ Causes boxing and hidden allocations.
 
 - Start with `List<T>` or `Dictionary<TKey, TValue>`
 - Preallocate when size is known
-- Use `HashSet<T>` for lookup-heavy workloads
-
----
-
-## Summary
-
-- Collections
-- Comparisons
-- Benchmarks
-- Scenarios
-- Advanced topics
+- Use `HashSet<T>` immediately for lookup-heavy workloads
