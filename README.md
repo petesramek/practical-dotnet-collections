@@ -18,21 +18,25 @@ A practical, performance-focused guide to choosing the right .NET collection bas
 | Requirement | Use |
 |------------|-----|
 | Dynamic list of items | `List<T>` |
-| Key lookup | `Dictionary<TKey, TValue>` |
-| Existence checks | `HashSet<T>` |
-| FIFO processing | `Queue<T>` |
-| LIFO processing | `Stack<T>` |
-| Sorted key-value (dynamic) | `SortedDictionary<TKey, TValue>` |
-| Sorted key-value (read-heavy) | `SortedList<TKey, TValue>` |
-| Sorted values | `SortedSet<T>` |
-| Thread-safe key-value | `ConcurrentDictionary<TKey, TValue>` |
-| Async pipeline | `Channel<T>` |
-| Blocking pipeline | `BlockingCollection<T>` |
-| Immutable read-heavy | `ImmutableArray<T>` |
-| Immutable structural updates | `ImmutableList<T>` |
-| Static lookup | `FrozenDictionary<TKey, TValue>` |
-| Static set | `FrozenSet<T>` |
-| Priority processing | `PriorityQueue<TElement, TPriority>` |
+| Key-based lookup | `Dictionary<TKey, TValue>` |
+| Fast existence checks | `HashSet<T>` |
+| Process items in arrival order | `Queue<T>` |
+| Process most recent items first | `Stack<T>` |
+| Process items by priority | `PriorityQueue<TElement, TPriority>` |
+| Sorted key-value data with frequent updates | `SortedDictionary<TKey, TValue>` |
+| Sorted key-value data with frequent reads | `SortedList<TKey, TValue>` |
+| Sorted values only | `SortedSet<T>` |
+| Thread-safe key-value access | `ConcurrentDictionary<TKey, TValue>` |
+| Async producer–consumer pipeline | `Channel<T>` |
+| Blocking producer–consumer pipeline | `BlockingCollection<T>` |
+| Immutable data, built once | `ImmutableArray<T>` |
+| Immutable data, rebuilt often | `ImmutableList<T>` |
+| Immutable key-value data | `ImmutableDictionary<TKey, TValue>` |
+| Immutable set | `ImmutableHashSet<T>` |
+| Static, lookup-heavy key-value data | `FrozenDictionary<TKey, TValue>` |
+| Static, lookup-heavy set | `FrozenSet<T>` |
+| Read-only view over a list | `ReadOnlyCollection<T>` |
+| Read-only view over key-value data | `ReadOnlyDictionary<TKey, TValue>` |
 
 ---
 
@@ -45,34 +49,50 @@ Decision is made in this order:
 3. Access pattern (lookup vs sequential)
 4. Ordering requirements
 
-```mermaid
 flowchart TD
-    A[Start] --> B{Thread-safe / Shared?}
+    A[Start] --> B{Thread-safe / Shared}
 
-    B -->|Yes| C{Async pipeline?}
-    C -->|Yes| D[Channel]
-    C -->|No| E{Blocking pipeline?}
-    E -->|Yes| F[BlockingCollection]
-    E -->|No| G[ConcurrentDictionary]
+    %% Thread-safe branch
+    B -->|Yes| C{Async pipeline}
+    C -->|Yes| C1[Channel]
+    C -->|No| C2{Blocking pipeline}
+    C2 -->|Yes| E1[BlockingCollection]
+    C2 -->|No| E2[ConcurrentDictionary]
 
+    %% Non-thread-safe
     B -->|No| H{Data lifetime}
 
+    %% Immutable
     H -->|Immutable| I{Access pattern}
-    I -->|Read-heavy| J[ImmutableArray]
-    I -->|Structural updates| K[ImmutableList]
+    I -->|Read-heavy| J1[ImmutableArray]
+    I -->|Structural updates| J2[ImmutableList]
+    I -->|Key-value| J3[ImmutableDictionary]
+    I -->|Set| J4[ImmutableHashSet]
 
-    H -->|Static / Read-only| L{Data type}
+    %% Static
+    H -->|Static| L{Data type}
     L -->|Key-value| M[FrozenDictionary]
     L -->|Values only| N[FrozenSet]
 
+    %% Read-only
+    H -->|Read-only| L2{Data type}
+    L2 -->|Key-value| L3[ReadOnlyDictionary]
+    L2 -->|Values only| L4[ReadOnlyCollection]
+
+    %% Dynamic
     H -->|Dynamic| O{Data access}
 
-    O -->|Key lookup| P{Existence only?}
+    %% Lookup
+    O -->|Key lookup| P{Existence only}
     P -->|Yes| Q[HashSet]
-    P -->|No| R{Always sorted?}
-    R -->|Yes| S[SortedDictionary / SortedList]
-    R -->|No| T[Dictionary]
+    P -->|No| R{Always sorted}
 
+    R -->|Yes| S[SortedDictionary or SortedList]
+    R -->|No| T{Read only}
+    T -->|Yes| T1[ReadOnlyDictionary]
+    T -->|No| T2[Dictionary]
+
+    %% Sequential
     O -->|Sequential| U{Ordering}
     U -->|FIFO| V[Queue]
     U -->|LIFO| W[Stack]
@@ -96,7 +116,6 @@ if (list.Contains(x))
 ```
 
 Use `HashSet<T>` as a persistent state container created once and reused for lookups.
-
 ---
 
 ### Modifying `ImmutableArray<T>` inside loops
