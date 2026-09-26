@@ -2,4 +2,82 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/PracticalDotNetCollections.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/docs/" />
+  <Folder Name="/docs/advanced/">
+    <File Path="docs/advanced/large-object-heap.md" />
+    <File Path="docs/advanced/struct-dictionary-keys.md" />
+  </Folder>
+  <Folder Name="/docs/collections/">
+    <File Path="docs/collections/bitarray.md" />
+    <File Path="docs/collections/blockingcollection.md" />
+    <File Path="docs/collections/channel.md" />
+    <File Path="docs/collections/concurrentbag.md" />
+    <File Path="docs/collections/concurrentdictionary.md" />
+    <File Path="docs/collections/concurrentqueue.md" />
+    <File Path="docs/collections/concurrentstack.md" />
+    <File Path="docs/collections/dictionary.md" />
+    <File Path="docs/collections/frozendictionary.md" />
+    <File Path="docs/collections/frozenset.md" />
+    <File Path="docs/collections/hashset.md" />
+    <File Path="docs/collections/immutablearray.md" />
+    <File Path="docs/collections/immutabledictionary.md" />
+    <File Path="docs/collections/immutablehashset.md" />
+    <File Path="docs/collections/immutablelist.md" />
+    <File Path="docs/collections/linkedlist.md" />
+    <File Path="docs/collections/list.md" />
+    <File Path="docs/collections/priorityqueue.md" />
+    <File Path="docs/collections/queue.md" />
+    <File Path="docs/collections/readonlycollection.md" />
+    <File Path="docs/collections/readonlydictionary.md" />
+    <File Path="docs/collections/sorteddictionary.md" />
+    <File Path="docs/collections/sortedlist.md" />
+    <File Path="docs/collections/sortedset.md" />
+    <File Path="docs/collections/stack.md" />
+  </Folder>
+  <Folder Name="/docs/comparisons/">
+    <File Path="docs/comparisons/channel-vs-blockingcollection.md" />
+    <File Path="docs/comparisons/dictionary-vs-frozendictionary.md" />
+    <File Path="docs/comparisons/dictionary-vs-sorteddictionary.md" />
+    <File Path="docs/comparisons/hashset-vs-frozenset.md" />
+    <File Path="docs/comparisons/hashset-vs-list-lookup.md" />
+    <File Path="docs/comparisons/immutablearray-vs-immutablelist.md" />
+    <File Path="docs/comparisons/list-default-vs-capacity.md" />
+    <File Path="docs/comparisons/list-vs-linkedlist.md" />
+    <File Path="docs/comparisons/sorteddictionary-vs-sortedlist.md" />
+  </Folder>
+  <Folder Name="/docs/scenarios/">
+    <File Path="docs/scenarios/async-pipeline.md" />
+    <File Path="docs/scenarios/concurrent-deduplication.md" />
+    <File Path="docs/scenarios/configuration-caching.md" />
+    <File Path="docs/scenarios/priority-processing.md" />
+    <File Path="docs/scenarios/sliding-window-buffer.md" />
+    <File Path="docs/scenarios/undo-redo.md" />
+  </Folder>
+  <Folder Name="/samples/">
+    <File Path="samples/bitarray-permission-validation.cs" />
+    <File Path="samples/blockingcollection-log-processing.cs" />
+    <File Path="samples/channel-log-processing.cs" />
+    <File Path="samples/concurrentbag-task-distribution.cs" />
+    <File Path="samples/concurrentdictionary-state-cache.cs" />
+    <File Path="samples/concurrentqueue-log-streaming.cs" />
+    <File Path="samples/concurrentstack-undo-actions.cs" />
+    <File Path="samples/dictionary-caching.cs" />
+    <File Path="samples/frozendictionary-configuration-lookup.cs" />
+    <File Path="samples/frozenset-allowlist-validation.cs" />
+    <File Path="samples/hashset-deduplication.cs" />
+    <File Path="samples/immutablearray-configuration-snapshot.cs" />
+    <File Path="samples/immutabledictionary-routing-table.cs" />
+    <File Path="samples/immutablehashset-security-claims.cs" />
+    <File Path="samples/immutablelist-history-snapshot.cs" />
+    <File Path="samples/linkedlist-prepend.cs" />
+    <File Path="samples/list-batch-buffering.cs" />
+    <File Path="samples/priorityqueue-job-triage.cs" />
+    <File Path="samples/queue-message-processing.cs" />
+    <File Path="samples/readonlycollection-data-shielding.cs" />
+    <File Path="samples/readonlydictionary-configuration-shielding.cs" />
+    <File Path="samples/sorteddictionary-triage.cs" />
+    <File Path="samples/sortedlist-lookup-registry.cs" />
+    <File Path="samples/sortedset-analytics-tracker.cs" />
+    <File Path="samples/stack-undo-actions.cs" />
+  </Folder>
 </Solution>
