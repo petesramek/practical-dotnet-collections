@@ -63,5 +63,5 @@
 - [x] struct-dictionary-keys
 
 ## Open items
-- [ ] A benchmark page for `FailedLookupBenchmark` (list vs hash lookups of missing keys).
+- [x] A benchmark page for `FailedLookupBenchmark` (in the hashset-vs-list-lookup comparison).
 - [ ] Re-run all benchmarks on one machine/runtime and record the environment in each page.
