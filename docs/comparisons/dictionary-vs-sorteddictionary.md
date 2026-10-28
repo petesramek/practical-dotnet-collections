@@ -70,7 +70,7 @@ Using SortedDictionary just to get sorted output.
 - Every .Add() pays the cost of keeping the structure ordered
 - If you only need sorted output at the end:
 
-`csharp
+```csharp
 var dict = new Dictionary<int, string>();
 // populate
 
@@ -78,7 +78,7 @@ foreach (var key in dict.Keys.OrderBy(x => x))
 {
     Console.WriteLine(dict[key]);
 }
-`
+```
 
 This is often faster than maintaining order during every insert.
 

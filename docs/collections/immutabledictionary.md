@@ -74,13 +74,13 @@ dotnet run -c Release -- --filter *Memory.ImmutableDictionaryBenchmark*
 
 ### Interpretation
 
-- **The Item Loop Allocation Disaster**: Appending 10,000 items individually using `.Add()` (`ImmutableDictionaryAdd`) is an exceptional performance pitfall. It takes **3.63 milliseconds** and pollutes the heap with **7.8 Megabytes** of garbage, forcing frequent Gen 1 and Gen 2 garbage collection cycles. This happens because the framework must rebuild and re-balance an entire binary tree route map on every single entry loop pass.
+- **The Item Loop Allocation Cost**: Appending 10,000 items individually using `.Add()` (`ImmutableDictionaryAdd`) is a significant performance pitfall. It takes **3.63 milliseconds** and pollutes the heap with **7.8 Megabytes** of garbage, forcing frequent Gen 1 and Gen 2 garbage collection cycles. This happens because the framework must rebuild and re-balance an entire binary tree route map on every single entry loop pass.
 - **The Builder Salvation Factor**: The `ImmutableDictionaryWithBuilderAdd` method mitigates this initialization penalty. Using the dedicated intermediate `Builder` pattern reduces allocation footprint down to **560 KB** (a **92.8% reduction**) and cuts execution time in half to 1.65 ms. The builder staging area stores items flatly, compiling the binary nodes only once when `.ToImmutable()` is invoked.
 - **The Lookup Read Penalty**: On lookup execution hot paths (`ImmutableDictionaryLookup`), the collection is **nearly 20x slower** than a standard `Dictionary<TKey, TValue>` (~78.7 ns vs ~4.2 ns). While a standard dictionary uses flat hash math calculations to hit bucket memory directly, `ImmutableDictionary` must actively step down through layers of pointer branches to find keys within its internal tree structures.
 
 ## Practical optimizations
 - Use builders (ToBuilder) for bulk updates
-- **Always batch map constructions inside the Stateful Builder**: If you must assemble an `ImmutableDictionary` dynamically using configuration cycles, never invoke direct sequential `.Add()` operations. Always construct the collection via `ImmutableDictionary.CreateBuilder<K, V>()` to protect your runtime from massive heap allocation churn.
+- **Always batch map constructions inside the Stateful Builder**: If you must assemble an `ImmutableDictionary` dynamically using configuration cycles, never invoke direct sequential `.Add()` operations. Always construct the collection via `ImmutableDictionary.CreateBuilder<K, V>()` to protect your runtime from large heap allocation churn.
 - **Prefer FrozenDictionary for permanent read-only caches**: If your lookup datasets are created once at startup and are completely read-only, do not choose `ImmutableDictionary`. Use `FrozenDictionary` instead, which delivers direct flat hash lookup speeds rather than slower binary branch traversals.
 
 ## Common mistakes

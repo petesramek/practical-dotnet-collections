@@ -19,7 +19,7 @@ You need:
 
 Use Queue<T> with a fixed capacity pattern:
 
-`csharp
+```csharp
 var capacity = 5;
 var buffer = new Queue<int>(capacity);
 
@@ -30,7 +30,7 @@ void Add(int value)
 
     buffer.Enqueue(value);
 }
-`
+```
 
 ---
 
@@ -44,7 +44,7 @@ void Add(int value)
 
 ## Example
 
-`csharp
+```csharp
 Add(1);
 Add(2);
 Add(3);
@@ -53,7 +53,7 @@ Add(5);
 Add(6);
 
 // buffer now contains: 2,3,4,5,6
-`
+```
 
 ---
 
@@ -77,9 +77,9 @@ Add(6);
 
 Using List<T> and removing from the front:
 
-`csharp
+```csharp
 list.RemoveAt(0);
-`
+```
 
 - shifts entire array
 - becomes expensive at scale

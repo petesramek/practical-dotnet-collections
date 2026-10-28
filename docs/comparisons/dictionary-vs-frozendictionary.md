@@ -63,23 +63,23 @@ When should you use a general-purpose dictionary vs a precomputed, read-only dic
 
 Using Dictionary for static data:
 
-`csharp
+```csharp
 var dict = LoadConfig();
 
 // used millions of times
 var value = dict[key];
-`
+```
 
 This works, but you are not using the most optimized structure.
 
 Better:
 
-`csharp
+```csharp
 var dict = LoadConfig();
 var frozen = dict.ToFrozenDictionary();
 
 var value = frozen[key];
-`
+```
 
 ---
 

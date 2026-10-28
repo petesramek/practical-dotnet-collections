@@ -74,12 +74,12 @@ dotnet run -c Release -- --filter *Lookup.SortedSetBenchmark*
 
 - **The Insertion Penalty**: For random mutations (`SortedSetAdd`), building the tree layout takes **43,151 ns** compared to the hash pool's **8,355 ns** at small scales. This makes the sorted set **over 5x slower** for insertions. The framework is forced to run pointer comparison evaluations and handle complex node rotations continuously on every single addition.
 - **The Logarithmic Search Cost**: On search containment hot paths (`SortedSetContains`), performance degrades logarithmically as elements scale, jumping from 36.6 ns to **60.1 ns** as elements grow. It runs **nearly 18x slower** than standard hash pools. While a standard hash set uses flat hash math calculations to hit bucket memory addresses directly (O(1)), a sorted set must actively navigate node-by-node down pointer chains.
-- **The Memory Allocation Profile**: While `SortedSet` tracks elements via pointer chains rather than huge contiguous blocks (resulting in smaller up-front allocation metrics in this static slice check), it generates high numbers of short-lived reference objects on massive insert streams due to node allocation overhead.
+- **The Memory Allocation Profile**: While `SortedSet` tracks elements via pointer chains rather than huge contiguous blocks (resulting in smaller up-front allocation metrics in this static slice check), it generates high numbers of short-lived reference objects on large insert streams due to node allocation overhead.
 
 ## Practical optimizations
 - Use when ordering is required
 - Avoid if only lookup speed matters
-- **Leverage range subset views over loops**: If you only need to process an isolated block of data within set thresholds, utilize `.GetViewBetween()` instead of filtering the collection yourself. This returns a targeted structural subtree pointer view instantly without copying elements.
+- **Leverage range subset views over loops**: If you only need to process an isolated block of data within set thresholds, utilize `.GetViewBetween()` instead of filtering the collection yourself. This returns a targeted structural subtree pointer view immediately without copying elements.
 - **Isolate insertion tracks from real-time lookup blocks**: If your architecture requires loading large blocks of elements initially before running queries, load data into a standard flat `HashSet<T>` first. Only use a sorted set if real-time, dynamic collection sort state visibility is a critical runtime constraint.
 
 ## Common mistakes
@@ -94,7 +94,7 @@ dotnet run -c Release -- --filter *Lookup.SortedSetBenchmark*
 
 ## When I would avoid it
 - Need fastest lookup → use HashSet<T>
-- On high-frequency execution tracks where rapid, near-instant lookup execution speed is your primary performance metric. Use standard `HashSet<T>` or `FrozenSet<T>`.
+- On high-frequency execution tracks where rapid, near-fast lookup execution speed is your primary performance metric. Use standard `HashSet<T>` or `FrozenSet<T>`.
 - In workloads that are highly modification-heavy but rarely require sorted sequence access tracking loops.
 
 ## Rule of thumb

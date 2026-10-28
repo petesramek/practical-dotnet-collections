@@ -63,18 +63,18 @@ When should you use a mutable set vs a precomputed, read-only set optimized for 
 
 Using HashSet for static, lookup-heavy data:
 
-`csharp
+```csharp
 var set = LoadData();
 
 if (set.Contains(value))
 {
     // called millions of times
 }
-`
+```
 
 Better:
 
-`csharp
+```csharp
 var set = LoadData();
 var frozen = set.ToFrozenSet();
 
@@ -82,7 +82,7 @@ if (frozen.Contains(value))
 {
     // optimized lookup
 }
-`
+```
 
 ---
 

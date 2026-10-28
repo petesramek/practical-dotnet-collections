@@ -26,6 +26,8 @@ public class ConcurrentDictionaryBenchmark {
         _concurrentCache = new ConcurrentDictionary<int, int>();
         _stateCache = new ConcurrentDictionary<int, int>();
 
+        // The cache is pre-populated, so GetOrAdd always finds an existing key and the factory never runs.
+        // Only the cost of creating the delegate (and closure) per call is being compared.
         for (int i = 0; i < 50_000; i++) {
             _concurrentCache[i] = i;
             _stateCache[i] = i;

@@ -40,8 +40,8 @@ Notes:
 
 ## Complexity overview
 
-- **Tail Appends (`Add`)**: Instant constant-time operations on average, punctuated by linear reallocations when boundaries split.
-- **Index Access Lookup**: Instant direct hardware address offset mapping.
+- **Tail Appends (`Add`)**: Constant-time constant-time operations on average, punctuated by linear reallocations when boundaries split.
+- **Index Access Lookup**: Constant-time direct hardware address offset mapping.
 - **Middle/Front Mutations (`Insert`/`RemoveAt`)**: Linear vector shifting penalties proportional to row counts.
 
 ## Benchmark results
@@ -77,9 +77,9 @@ dotnet run -c Release -- --filter *Add.ListBenchmark*
 
 ### Interpretation
 
-- **The Array Shifting Disaster**: The `InsertAtBeginning` method demonstrates a brutal layout penalty under scaling. Inserting 10,000 items sequentially via `.Insert(0, i)` takes a massive **4.79 milliseconds**—making it **over 200x slower** than standard tail additions. Because arrays are contiguous, adding an item at index 0 forces the processor to physically copy and shift all existing values forward one slot in memory on every single loop pass.
+- **The Array Shifting Cost**: The `InsertAtBeginning` method demonstrates a layout penalty under scaling. Inserting 10,000 items sequentially via `.Insert(0, i)` takes a large **4.79 milliseconds**—making it **over 200x slower** than standard tail additions. Because arrays are contiguous, adding an item at index 0 forces the processor to physically copy and shift all existing values forward one slot in memory on every single loop pass.
 - **The Dynamic Resizing Overhead**: The standard `Add` method takes 27.3 us and allocates 128.3 KB of memory at N = 10,000. It starts with an empty layout, forcing .NET to execute multiple intermediate array doublings and internal block migrations as the collection grows.
-- **The Pre-Sized Capacity Triumph**: The `PreSizedCapacityAdd` method resolves this initialization overhead. Specifying the target size in the constructor (`new List<int>(N)`) reduces total allocations down to **39.1 KB** (a **69.5% memory reduction**) and cuts execution time to 22.9 us. Pre-sizing creates exactly one single, perfectly matched memory array block upfront, completely eliminating dynamic resize operations and heap garbage collection traffic.
+- **Pre-sized capacity**: The `PreSizedCapacityAdd` method resolves this initialization overhead. Specifying the target size in the constructor (`new List<int>(N)`) reduces total allocations down to **39.1 KB** (a **69.5% memory reduction**) and cuts execution time to 22.9 us. Pre-sizing creates exactly one single, perfectly matched memory array block upfront, completely eliminating dynamic resize operations and heap garbage collection traffic.
 
 ## Practical optimizations
 - Pre-size list when size is known: `new List<T>(capacity)`

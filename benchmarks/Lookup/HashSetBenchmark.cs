@@ -85,6 +85,19 @@ public class HashSetBenchmark {
     /// Demonstrates the optimization fix: leveraging mathematical hash bucket intersections to isolate duplicates near-instantaneously.
     /// </summary>
     [Benchmark]
+    public List<int> ScenarioIntersectionHashSetFilter() {
+        var result = new List<int>();
+        for (int i = 0; i < _sourceItems.Count; i++) {
+            int item = _sourceItems[i];
+            if (_filterSet.Contains(item)) {
+                result.Add(item);
+            }
+        }
+        return result;
+    }
+
+    // Note: IntersectWith also removes duplicates, so it does slightly different work than the list loop above.
+    [Benchmark]
     public HashSet<int> ScenarioIntersectionHashSetBulk() {
         var result = new HashSet<int>(_sourceItems);
         result.IntersectWith(_filterSet);

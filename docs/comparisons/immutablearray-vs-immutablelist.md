@@ -62,20 +62,20 @@ When should you use a flat immutable array vs a tree-based immutable list?
 
 Using ImmutableArray<T> inside loops:
 
-`csharp
+```csharp
 var array = ImmutableArray<int>.Empty;
 
 for (int i = 0; i < 10000; i++)
 {
     array = array.Add(i); // allocates new array each time
 }
-`
+```
 
 This creates thousands of allocations.
 
 Better:
 
-`csharp
+```csharp
 var builder = ImmutableArray.CreateBuilder<int>();
 
 for (int i = 0; i < 10000; i++)
@@ -84,7 +84,7 @@ for (int i = 0; i < 10000; i++)
 }
 
 var array = builder.ToImmutable();
-`
+```
 
 ---
 

@@ -63,25 +63,25 @@ When should you use a hash-based lookup vs scanning a list?
 
 Using List<T> for repeated lookups in large collections.
 
-`csharp
+```csharp
 if (list.Contains(value))
 {
     // executed many times
 }
-`
+```
 
 This scans the list every time.
 
 Replace with:
 
-`csharp
+```csharp
 var set = new HashSet<int>(list);
 
 if (set.Contains(value))
 {
     // fast lookup
 }
-`
+```
 
 ---
 

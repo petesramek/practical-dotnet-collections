@@ -100,6 +100,8 @@ public class ConcurrentBagBenchmark {
                 while (Interlocked.Read(ref totalConsumed) < N) {
                     if (bag.TryTake(out _)) {
                         Interlocked.Increment(ref totalConsumed);
+                    } else {
+                        Thread.Yield();
                     }
                 }
             });
@@ -132,6 +134,8 @@ public class ConcurrentBagBenchmark {
                 while (Interlocked.Read(ref totalConsumed) < N) {
                     if (queue.TryDequeue(out _)) {
                         Interlocked.Increment(ref totalConsumed);
+                    } else {
+                        Thread.Yield();
                     }
                 }
             });
