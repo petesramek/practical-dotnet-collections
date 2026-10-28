@@ -58,21 +58,22 @@ dotnet run -c Release -- --filter *Lookup.FrozenSetBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **CreateFrozenSet** | 10000 | 227,307.695 ns | 94.9707 | 94.9707 | 94.9707 | 386,870 B |
-| **FrozenSetContains** | 10000 | 1.767 ns | - | - | - | - |
-| **HashSetContains** | 10000 | 3.497 ns | - | - | - | - |
-| | | | | | | |
-| **CreateFrozenSet** | 100000 | 1,354,242.696 ns | 498.0469 | 494.1406 | 494.1406 | 3,960,877 B |
-| **FrozenSetContains** | 100000 | 2.695 ns | - | - | - | - |
-| **HashSetContains** | 100000 | 4.099 ns | - | - | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Lookup.FrozenSetBenchmark-report-github.md).
+
+| Method            | N      | Mean             | Error           | StdDev          | Gen0     | Gen1     | Gen2     | Allocated |
+|------------------ |------- |-----------------:|----------------:|----------------:|---------:|---------:|---------:|----------:|
+| **CreateFrozenSet**   | **10000**  |   **604,234.749 ns** | **305,912.2878 ns** | **159,998.0417 ns** |  **90.8203** |  **90.8203** |  **90.8203** |  **370157 B** |
+| FrozenSetContains | 10000  |         2.457 ns |       0.1732 ns |       0.0906 ns |        - |        - |        - |         - |
+| HashSetContains   | 10000  |         4.324 ns |       0.1893 ns |       0.0990 ns |        - |        - |        - |         - |
+| **CreateFrozenSet**   | **100000** | **4,169,601.510 ns** | **736,993.0344 ns** | **327,229.4750 ns** | **414.0625** | **410.1563** | **410.1563** | **3943393 B** |
+| FrozenSetContains | 100000 |         4.444 ns |       1.4209 ns |       0.7431 ns |        - |        - |        - |         - |
+| HashSetContains   | 100000 |         5.442 ns |       0.1461 ns |       0.0521 ns |        - |        - |        - |         - |
 
 ### Interpretation
 
-- **The Startup Optimization Tax**: Building a `FrozenSet` introduces a notable up-front processing and allocation tax. At N = 100,000, calling `.ToFrozenSet()` takes **1,354,242 ns** and allocates nearly **4 MB** of temporary heap memory, triggering significant Gen 0, Gen 1, and Gen 2 garbage collection sweeps. This occurs because the .NET engine scans and maps the uniqueness of the elements to choose the fastest specialized underlying matching logic.
-- **The Containment Check Result**: Once compiled, the performance payoff on read paths is substantial. `FrozenSetContains` evaluates inclusion in just **1.7 ns to 2.6 ns**. It runs **nearly 2x faster** than a standard `HashSet`, which drops to 4.099 ns as the elements increase. By removing traditional hash collision check structures and dynamic capacity safety boundaries, the CPU executes fewer instructions per check.
-- **Flat Access Scaling**: Because the internal structure is precomputed and tailored for the exact keys it holds, access scaling remains highly optimized even as the set increases 10x from 10,000 to 100,000 elements.
+- **Construction trade-off**: at N = 100,000, creating a `FrozenSet` took **4,169,602 ns** and allocated **3,943,393 B**. It is intended for collections built once and queried repeatedly; include construction cost when the collection is short-lived.
+- **Containment lookup**: at N = 10,000, `FrozenSetContains` averaged **2.457 ns** versus **4.324 ns** for `HashSetContains`. At N = 100,000 the means were closer (4.444 ns and 5.442 ns), and their Error margins overlap, so that row does not establish a reliable advantage.
+- **Scaling**: compare matching N rows and their Error and StdDev values; the measurements do not support assuming a fixed speedup at every size.
 
 ## Practical optimizations
 - Build once, reuse many times

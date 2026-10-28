@@ -67,28 +67,27 @@ dotnet run -c Release -- --filter *Lookup.HashSetBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **HashSetLookup** | 10000 | 5.522 ns | - | - | - | - |
-| **ListLookup** | 10000 | 827.851 ns | - | - | - | - |
-| **ScenarioIntersectionListLoop** | 10000 | 1,791,909 ns | 1.9531 | - | - | 4,304 B |
-| **ScenarioIntersectionHashSetFilter** | 10000 | 65,229 ns | 2.0142 | - | - | 4,304 B |
-| **ScenarioIntersectionHashSetBulk** | 10000 | 635,030 ns | 38.0859 | 38.0859 | 38.0859 | 161,821 B |
-| | | | | | | |
-| **HashSetLookup** | 100000 | 7.304 ns | - | - | - | - |
-| **ListLookup** | 100000 | 8,217.004 ns | - | - | - | - |
-| **ScenarioIntersectionListLoop** | 100000 | 247,090,719 ns | - | - | - | 65,840 B |
-| **ScenarioIntersectionHashSetFilter** | 100000 | 2,666,999 ns | 27.3438 | - | - | 65,840 B |
-| **ScenarioIntersectionHashSetBulk** | 100000 | 7,758,623 ns | 312.5000 | 312.5000 | 312.5000 | 1,740,428 B |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Lookup.HashSetBenchmark-report-github.md).
 
-Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10; compare ratios rather than absolute values.
+| Method                            | N      | Mean               | Error              | StdDev             | Gen0     | Gen1     | Gen2     | Allocated |
+|---------------------------------- |------- |-------------------:|-------------------:|-------------------:|---------:|---------:|---------:|----------:|
+| **HashSetLookup**                     | **10000**  |           **4.209 ns** |          **0.1211 ns** |          **0.0538 ns** |        **-** |        **-** |        **-** |         **-** |
+| ListLookup                        | 10000  |         611.392 ns |         47.1768 ns |         20.9468 ns |        - |        - |        - |         - |
+| ScenarioIntersectionListLoop      | 10000  |   1,347,413.076 ns |     44,182.9656 ns |     23,108.5453 ns |   1.9531 |        - |        - |    4304 B |
+| ScenarioIntersectionHashSetFilter | 10000  |      90,045.310 ns |      3,478.8642 ns |      1,819.5132 ns |   1.9531 |        - |        - |    4304 B |
+| ScenarioIntersectionHashSetBulk   | 10000  |     564,776.067 ns |     63,781.2607 ns |     33,358.8327 ns |  38.0859 |  38.0859 |  38.0859 |  161821 B |
+| **HashSetLookup**                     | **100000** |           **6.931 ns** |          **3.0615 ns** |          **1.6012 ns** |        **-** |        **-** |        **-** |         **-** |
+| ListLookup                        | 100000 |       6,837.801 ns |      2,298.2420 ns |      1,202.0250 ns |        - |        - |        - |         - |
+| ScenarioIntersectionListLoop      | 100000 | 177,395,053.819 ns | 79,952,184.7570 ns | 41,816,538.5989 ns |        - |        - |        - |   65856 B |
+| ScenarioIntersectionHashSetFilter | 100000 |   1,654,388.184 ns |     38,271.3076 ns |     20,016.6339 ns |  29.2969 |        - |        - |   65840 B |
+| ScenarioIntersectionHashSetBulk   | 100000 |   5,589,867.350 ns |    349,875.8964 ns |    182,991.8591 ns | 312.5000 | 312.5000 | 312.5000 | 1740547 B |
 
 ### Interpretation
 
-- **Lookup scaling**: when N grows 10x (10,000 to 100,000), `ListLookup` grows about 10x (828 ns to 8,217 ns), as expected for a linear scan, while `HashSetLookup` stays in the same order of magnitude (5.5 ns to 7.3 ns) because it hashes the item instead of scanning.
-- **Intersection with a list loop**: `ScenarioIntersectionListLoop` calls `_filterList.Contains(item)` for every source item, which is quadratic. At N = 100,000 it took about 247 ms.
-- **Intersection with a `HashSet` filter**: `ScenarioIntersectionHashSetFilter` does the same work (same loop, same output including duplicates) but checks membership in a `HashSet`. It took about 2.7 ms at N = 100,000, roughly 90x faster than the list loop, with identical allocation. This is the like-for-like comparison.
-- **Intersection with `IntersectWith`**: `ScenarioIntersectionHashSetBulk` copies the source into a `HashSet` and calls `IntersectWith`. It took about 7.8 ms and allocated about 1.7 MB at N = 100,000. It is not the same work as the loop: the result is de-duplicated, and the copy costs memory. Use it when you want set semantics, and the filter variant when you want to keep duplicates.
+- **Lookup scaling**: `ListLookup` scans the collection, so its work grows with N; `HashSetLookup` hashes the item instead. At N = 100,000, their means were **6,837.801 ns** and **6.931 ns** respectively. The Error and StdDev columns show the variability, especially for the list scan.
+- **Intersection with a list loop**: `ScenarioIntersectionListLoop` calls `_filterList.Contains(item)` for every source item, which is quadratic. At N = 100,000 it averaged **177 ms**.
+- **Intersection with a `HashSet` filter**: `ScenarioIntersectionHashSetFilter` does the same loop and retains duplicates, but checks membership in a `HashSet`. It averaged **1.65 ms** at N = 100,000, with about the same allocation as the list loop in this run. This is the like-for-like comparison.
+- **Intersection with `IntersectWith`**: `ScenarioIntersectionHashSetBulk` copies the source into a `HashSet` and calls `IntersectWith`. It averaged **5.59 ms** and allocated **1.74 MB** at N = 100,000. It is not the same work as the loop: the result is de-duplicated, and the copy costs memory. Use it when you want set semantics, and the filter variant when you want to keep duplicates.
 
 ## Practical optimizations
 - Use `HashSet<T>` for membership checks

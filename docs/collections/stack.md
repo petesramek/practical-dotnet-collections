@@ -60,20 +60,21 @@ dotnet run -c Release -- --filter *Iteration.StackBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Allocated |
-| :--- | :--- | :--- | :--- | :--- |
-| **StackThroughput** | 1000 | 5.989 us | 4.0207 | 8.23 KB |
-| **PreSizedStackThroughput** | 1000 | 4.816 us | 1.9379 | 3.96 KB |
-| **ListAddRemoveFromEnd** | 1000 | 4.780 us | 4.0207 | 8.23 KB |
-| | | | | |
-| **StackThroughput** | 10000 | 51.387 us | 62.4390 | 128.32 KB |
-| **PreSizedStackThroughput** | 10000 | **49.420 us** | 18.8599 | **39.12 KB** |
-| **ListAddRemoveFromEnd** | 10000 | **47.190 us** | 62.4390 | 128.32 KB |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Iteration.StackBenchmark-report-github.md).
+
+| Method                  | N     | Mean      | Error     | StdDev    | Gen0    | Allocated |
+|------------------------ |------ |----------:|----------:|----------:|--------:|----------:|
+| **StackThroughput**         | **1000**  |  **6.616 μs** | **0.3903 μs** | **0.2041 μs** |  **4.0207** |   **8.23 KB** |
+| PreSizedStackThroughput | 1000  |  6.253 μs | 0.4390 μs | 0.2296 μs |  1.9379 |   3.96 KB |
+| ListAddRemoveFromEnd    | 1000  |  6.342 μs | 0.8112 μs | 0.4243 μs |  4.0207 |   8.23 KB |
+| **StackThroughput**         | **10000** | **67.579 μs** | **4.1846 μs** | **1.8580 μs** | **62.3779** | **128.32 KB** |
+| PreSizedStackThroughput | 10000 | 60.444 μs | 2.8204 μs | 1.2523 μs | 18.7988 |  39.12 KB |
+| ListAddRemoveFromEnd    | 10000 | 59.482 μs | 1.5605 μs | 0.8162 μs | 62.3779 | 128.32 KB |
 
 ### Interpretation
 
-- **The Tail Mutation Parity**: Unlike operations at the front of array-backed structures, mutating elements at the very end of a stack or list involves zero memory shifting. Both `StackThroughput` and `ListAddRemoveFromEnd` run at almost identical speeds under scale (~51 us vs ~47 us). They simply assign values to index positions and adjust an internal pointer boundary.
-- **The Pre-Sized Payload Optimization**: The `PreSizedStackThroughput` track highlights the advantages of eliminating dynamic resizing loops. Specifying the target size in the constructor (`new Stack<int>(N)`) drops memory allocation overhead down to **39.12 KB** (a **69.5% reduction** at N = 10,000). Pre-sizing eliminates multiple intermediate array duplications and protects the runtime from managed heap garbage collection cycles.
+- **Tail mutation**: at N = 10,000, `StackThroughput` averaged **67.6 us** and `ListAddRemoveFromEnd` averaged **59.5 us**. Both perform operations at the end of array-backed collections; the current means are not identical.
+- **Pre-sized capacity**: at N = 10,000, `PreSizedStackThroughput` allocated **39.1 KB** versus **128 KB** for the default stack (about 70% less). Its mean was 60.4 us versus 67.6 us, with Error margins that narrowly do not overlap in this run.
 
 ## Practical optimizations
 - Use for LIFO scenarios only

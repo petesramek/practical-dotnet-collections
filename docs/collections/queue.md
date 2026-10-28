@@ -59,21 +59,21 @@ dotnet run -c Release -- --filter *Iteration.QueueBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Allocated |
-| :--- | :--- | :--- | :--- | :--- |
-| **QueueThroughput** | 1000 | 5.360 us | 4.0283 | 8.23 KB |
-| **PreSizedQueueThroughput** | 1000 | 4.763 us | 1.9379 | 3.97 KB |
-| **ListRemoveAtBeginning** | 1000 | 53.380 us | 3.9673 | 8.23 KB |
-| | | | | |
-| **QueueThroughput** | 10000 | 52.167 us | 62.4390 | 128.33 KB |
-| **PreSizedQueueThroughput** | 10000 | **46.833 us** | 18.8599 | **39.13 KB** |
-| **ListRemoveAtBeginning** | 10000 | **4,833.474 us** | 54.6875 | 128.32 KB |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Iteration.QueueBenchmark-report-github.md).
+
+| Method                  | N     | Mean         | Error      | StdDev     | Gen0    | Allocated |
+|------------------------ |------ |-------------:|-----------:|-----------:|--------:|----------:|
+| **QueueThroughput**         | **1000**  |     **7.410 μs** |  **1.1776 μs** |  **0.5229 μs** |  **4.0283** |   **8.23 KB** |
+| PreSizedQueueThroughput | 1000  |     6.686 μs |  0.5207 μs |  0.1857 μs |  1.9379 |   3.97 KB |
+| ListRemoveAtBeginning   | 1000  |    84.214 μs | 26.7387 μs | 13.9848 μs |  3.9063 |   8.23 KB |
+| **QueueThroughput**         | **10000** |    **61.822 μs** |  **3.4371 μs** |  **1.7976 μs** | **62.3779** | **128.33 KB** |
+| PreSizedQueueThroughput | 10000 |    58.729 μs |  8.7286 μs |  3.8755 μs | 18.8599 |  39.13 KB |
+| ListRemoveAtBeginning   | 10000 | 5,727.860 μs | 45.5733 μs | 23.8357 μs | 54.6875 | 128.32 KB |
 
 ### Interpretation
 
-- **The List Removal Cost**: Using a standard list to manage a streaming FIFO channel by calling `.RemoveAt(0)` (`ListRemoveAtBeginning`) hits a significant performance wall under scale. At N = 10,000, it takes a **4.83 milliseconds**—making it **over 90x slower** than the queue loop. Because lists are straight contiguous vectors, popping an item from index 0 forces the processor to copy and slide all remaining 9,999 records forward in memory by one slot on every single iteration pass.
-- **The Circular Pointer Advantage**: The `QueueThroughput` method finishes the exact same 10,000 element streaming workload in **52.1 microseconds**. Because its internal circular buffer replaces expensive element shifting loops with simple pointer arithmetic math, elements are enqueued and dequeued cheaply. However, empty initializations force multiple dynamic capacity array expansions, generating 128.3 KB of data overhead.
-- **The Pre-Sized Payload Optimization**: The `PreSizedQueueThroughput` track resolves the dynamic resizing tax completely. Specifying the target limit upfront in the constructor (`new Queue<int>(N)`) reduces total allocations down to **39.1 KB** (a **69.5% memory reduction**) and cuts execution time to 46.8 us, eliminating intermediate array copies and heap garbage collection traffic.
+- **The list removal cost**: at N = 10,000, `ListRemoveAtBeginning` averaged **5.73 ms**, compared with **61.8 us** for `QueueThroughput`. Removing index zero from a list shifts the remaining elements; a queue advances its circular-buffer head instead.
+- **The pre-sized capacity trade-off**: at N = 10,000, `PreSizedQueueThroughput` allocated **39.1 KB** versus **128 KB** for the default queue. The means were 58.7 us and 61.8 us respectively, but their Error margins overlap, so the timing difference is inconclusive in this run.
 
 ## Practical optimizations
 - Use Queue for FIFO scenarios

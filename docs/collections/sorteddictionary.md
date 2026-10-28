@@ -58,22 +58,23 @@ dotnet run -c Release -- --filter *Lookup.SortedDictionaryBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Allocated |
-| :--- | :--- | :--- | :--- | :--- |
-| **SortedDictionaryAdd** | 1000 | 106,391.226 ns | 22.7051 | 47,920 B |
-| **DictionaryAdd** | 1000 | 9,668.114 ns | 34.4696 | 73,168 B |
-| **SortedDictionaryLookup** | 1000 | 34.193 ns | - | - |
-| **DictionaryLookup** | 1000 | 3.467 ns | - | - |
-| | | | | |
-| **SortedDictionaryAdd** | 10000 | 79,689.567 ns | 22.8271 | 47,920 B |
-| **DictionaryAdd** | 10000 | 9,413.240 ns | 34.4696 | 73,168 B |
-| **SortedDictionaryLookup** | 10000 | **64.021 ns** | - | - |
-| **DictionaryLookup** | 10000 | **3.433 ns** | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Lookup.SortedDictionaryBenchmark-report-github.md).
+
+| Method                 | N     | Mean           | Error         | StdDev        | Gen0    | Allocated |
+|----------------------- |------ |---------------:|--------------:|--------------:|--------:|----------:|
+| **SortedDictionaryAdd**    | **1000**  | **120,496.587 ns** | **6,328.6848 ns** | **3,310.0245 ns** | **22.8271** |   **47920 B** |
+| DictionaryAdd          | 1000  |  15,828.885 ns | 1,994.1902 ns | 1,043.0001 ns | 34.4696 |   73168 B |
+| SortedDictionaryLookup | 1000  |      46.389 ns |     2.6487 ns |     1.3853 ns |       - |         - |
+| DictionaryLookup       | 1000  |       4.201 ns |     0.1180 ns |     0.0617 ns |       - |         - |
+| **SortedDictionaryAdd**    | **10000** | **116,342.231 ns** | **2,199.6544 ns** |   **976.6602 ns** | **22.8271** |   **47920 B** |
+| DictionaryAdd          | 10000 |  14,198.847 ns | 1,146.7838 ns |   599.7901 ns | 34.4696 |   73168 B |
+| SortedDictionaryLookup | 10000 |      92.689 ns |    14.0015 ns |     6.2168 ns |       - |         - |
+| DictionaryLookup       | 10000 |       4.825 ns |     0.6361 ns |     0.3327 ns |       - |         - |
 
 ### Interpretation
 
-- **The Insertion Penalty**: For random mutations (`SortedDictionaryAdd`), building the tree layout takes **106,391 ns** compared to the hash table's **9,668 ns** at small scales. This makes the sorted dictionary **over 10x slower** for insertions. The framework is forced to run pointer comparison evaluations and handle complex node rotations continuously on every single addition.
-- **The Logarithmic Lookup Cost**: On search execution hot paths (`SortedDictionaryLookup`), performance degrades logarithmically as elements scale, jumping from 34.1 ns to **64.0 ns** as elements grow. It runs **nearly 18x slower** than standard hash tables. While a standard dictionary uses flat hash math calculations to hit bucket memory addresses directly (O(1)), a sorted dictionary must actively navigate node-by-node down pointer chains.
+- **The insertion penalty**: at N = 10,000, `SortedDictionaryAdd` averaged **116 us** versus **14.2 us** for `DictionaryAdd` (about 8x by mean). The sorted map maintains ordering as entries are added.
+- **Lookup cost**: at N = 10,000, `SortedDictionaryLookup` averaged **92.7 ns** versus **4.83 ns** for `DictionaryLookup`. Use the reported Error and StdDev values when comparing measurements across sizes.
 - **The Memory Allocation Profile**: While `SortedDictionary` tracks elements via pointer chains rather than huge contiguous blocks (resulting in smaller up-front allocation metrics in this static slice check), it generates high numbers of short-lived reference objects on large insert streams due to node allocation overhead.
 
 ## Practical optimizations

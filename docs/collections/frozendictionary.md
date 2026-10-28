@@ -58,21 +58,22 @@ dotnet run -c Release -- --filter *Lookup.FrozenDictionaryBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **CreateFrozenDictionary** | 10000 | 22,779.721 ns | 37.7197 | - | - | 80,088 B |
-| **FrozenDictionaryLookup** | 10000 | 1.287 ns | - | - | - | - |
-| **DictionaryLookup** | 10000 | 3.609 ns | - | - | - | - |
-| | | | | | | |
-| **CreateFrozenDictionary** | 100000 | 288,477.445 ns | 200.1953 | 198.7305 | 198.7305 | 800,161 B |
-| **FrozenDictionaryLookup** | 100000 | 1.265 ns | - | - | - | - |
-| **DictionaryLookup** | 100000 | 4.435 ns | - | - | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Lookup.FrozenDictionaryBenchmark-report-github.md).
+
+| Method                 | N      | Mean           | Error           | StdDev         | Gen0     | Gen1     | Gen2     | Allocated |
+|----------------------- |------- |---------------:|----------------:|---------------:|---------:|---------:|---------:|----------:|
+| **CreateFrozenDictionary** | **10000**  |  **31,423.650 ns** |   **3,224.6842 ns** |  **1,431.7798 ns** |  **37.7197** |        **-** |        **-** |   **80088 B** |
+| FrozenDictionaryLookup | 10000  |       1.489 ns |       0.1038 ns |      0.0543 ns |        - |        - |        - |         - |
+| DictionaryLookup       | 10000  |       5.136 ns |       1.2699 ns |      0.6642 ns |        - |        - |        - |         - |
+| **CreateFrozenDictionary** | **100000** | **573,612.289 ns** | **110,460.0047 ns** | **57,772.7183 ns** | **191.4063** | **190.4297** | **190.4297** |  **800572 B** |
+| FrozenDictionaryLookup | 100000 |       1.442 ns |       0.0511 ns |      0.0267 ns |        - |        - |        - |         - |
+| DictionaryLookup       | 100000 |       5.795 ns |       0.5273 ns |      0.1881 ns |        - |        - |        - |         - |
 
 ### Interpretation
 
-- **The Startup Optimization Tax**: Building a `FrozenDictionary` introduces an explicit processing and memory cost upfront. At N = 100,000, calling `.ToFrozenDictionary()` takes **288,477 ns** and allocates **800 KB** of heap memory, triggering multiple rounds of Gen 0, Gen 1, and Gen 2 garbage collection. This happens because .NET analyzes the input dataset to choose and build a custom lookup architecture.
-- **The Read-Only Speed Result**: Once compiled, the investment delivers significant read performance. `FrozenDictionaryLookup` completes in a flat **1.2 ns** across both N = 10,000 and N = 100,000. It runs **nearly 4x faster** than a standard dictionary, which degrades slightly under scaling. By eliminating internal collision loops and tracking overhead, the CPU evaluates lookups quickly.
-- **Flat O(1) Access Scaling**: Because the lookup structure is pre-optimized for the exact keys it holds, performance does not degrade as the collection size scales from 10,000 to 100,000 items.
+- **The startup optimization tax**: at N = 100,000, creating a `FrozenDictionary` takes **573,612 ns** and allocates **800,572 B**. This is a one-time cost; the lookup advantage matters most when a collection is built once and queried repeatedly.
+- **Lookup speed**: at N = 100,000, `FrozenDictionaryLookup` averaged **1.442 ns** versus **5.795 ns** for `DictionaryLookup`. Compare the Error columns when considering smaller differences.
+- **Scaling**: the FrozenDictionary lookup means were similar at N = 10,000 and N = 100,000 in this run. The report's Error and StdDev columns provide the variability for each measurement.
 
 ## Practical optimizations
 - Build once, reuse many times

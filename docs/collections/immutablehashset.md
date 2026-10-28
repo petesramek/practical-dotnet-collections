@@ -58,25 +58,25 @@ dotnet run -c Release -- --filter *Memory.ImmutableHashSetBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ImmutableHashSetAdd** | 1000 | 230,404.545 ns | 290.0391 | - | - | 606,712 B |
-| **ImmutableHashSetWithBuilderAdd** | 1000 | 124,495.481 ns | 26.6113 | - | - | 56,048 B |
-| **HashSetAdd** | 1000 | 8,081.024 ns | 27.7710 | - | - | 58,664 B |
-| **ImmutableHashSetContains** | 1000 | 114.888 ns | - | - | - | - |
-| **HashSetContains** | 1000 | 4.494 ns | - | - | - | - |
-| | | | | | | |
-| **ImmutableHashSetAdd** | 10000 | 3,270,639.258 ns | 1953.1250 | 582.0313 | 7.8125 | 7,962,555 B |
-| **ImmutableHashSetWithBuilderAdd** | 10000 | 1,605,048.327 ns | 123.0469 | 68.3594 | - | 560,048 B |
-| **HashSetAdd** | 10000 | 302,168.659 ns | 132.8125 | 44.9219 | 34.1797 | 538,683 B |
-| **ImmutableHashSetContains** | 10000 | 109.239 ns | - | - | - | - |
-| **HashSetContains** | 10000 | 4.154 ns | - | - | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Memory.ImmutableHashSetBenchmark-report-github.md).
+
+| Method                         | N     | Mean             | Error           | StdDev         | Gen0      | Gen1     | Gen2    | Allocated |
+|------------------------------- |------ |-----------------:|----------------:|---------------:|----------:|---------:|--------:|----------:|
+| **ImmutableHashSetAdd**            | **1000**  |   **284,688.814 ns** |  **11,290.6322 ns** |  **5,013.1107 ns** |  **290.0391** |        **-** |       **-** |  **606712 B** |
+| ImmutableHashSetWithBuilderAdd | 1000  |   150,838.743 ns |     984.8929 ns |    515.1181 ns |   26.6113 |        - |       - |   56048 B |
+| HashSetAdd                     | 1000  |    10,979.132 ns |   1,215.8938 ns |    635.9360 ns |   27.7710 |        - |       - |   58664 B |
+| ImmutableHashSetContains       | 1000  |       165.913 ns |      15.6126 ns |      6.9321 ns |         - |        - |       - |         - |
+| HashSetContains                | 1000  |         5.110 ns |       0.1366 ns |      0.0607 ns |         - |        - |       - |         - |
+| **ImmutableHashSetAdd**            | **10000** | **4,395,268.107 ns** | **190,099.5616 ns** | **99,425.7465 ns** | **1890.6250** | **640.6250** |       **-** | **7962552 B** |
+| ImmutableHashSetWithBuilderAdd | 10000 | 1,994,269.999 ns |  34,724.7836 ns | 18,161.7333 ns |  117.1875 |  66.4063 |       - |  560048 B |
+| HashSetAdd                     | 10000 |   311,415.255 ns |  34,588.2102 ns | 18,090.3027 ns |  132.8125 |  44.9219 | 34.1797 |  538660 B |
+| ImmutableHashSetContains       | 10000 |       159.373 ns |      11.5409 ns |      6.0361 ns |         - |        - |       - |         - |
+| HashSetContains                | 10000 |         5.172 ns |       0.1383 ns |      0.0723 ns |         - |        - |       - |         - |
 
 ### Interpretation
 
-- **The Item Loop Allocation Cost**: Appending 10,000 items individually using `.Add()` (`ImmutableHashSetAdd`) is a significant performance pitfall. It takes **3.27 milliseconds** and pollutes the heap with **7.9 Megabytes** of garbage, forcing frequent Gen 1 and Gen 2 garbage collection cycles. This happens because the framework must rebuild and re-balance an entire binary tree route map on every single entry loop pass.
-- **The Builder Salvation Factor**: The `ImmutableHashSetWithBuilderAdd` method mitigates this initialization penalty. Using the dedicated intermediate `Builder` pattern reduces allocation footprint down to **560 KB** (a **92.8% reduction**) and cuts execution time in half to 1.60 ms. The builder staging area stores items flatly, compiling the binary nodes only once when `.ToImmutable()` is invoked.
-- **The Containment Check Read Penalty**: On lookup execution hot paths (`ImmutableHashSetContains`), the collection is **nearly 25x slower** than a standard `HashSet<int>` (~109.2 ns vs ~4.1 ns). While a standard unique hash set uses flat hash math calculations to hit bucket memory directly, `ImmutableHashSet` must actively step down through layers of pointer branches to find items within its internal tree structures.
+- **The item loop allocation cost**: at N = 10,000, `ImmutableHashSetAdd` averaged **4.40 ms** and allocated **7.96 MB**. The builder averaged **1.99 ms** and allocated **560 KB**, substantially reducing both costs in this run.
+- **Lookup cost**: at N = 10,000, `ImmutableHashSetContains` averaged **159.4 ns** versus **5.17 ns** for `HashSetContains`. The immutable lookup is much slower in this microbenchmark; consider whether immutability and safe sharing justify that cost for the workload.
 
 ## Practical optimizations
 - Prefer over ImmutableArray when uniqueness required

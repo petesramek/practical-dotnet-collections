@@ -59,23 +59,22 @@ dotnet run -c Release -- --filter *ConcurrentStackBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ConcurrentStackThroughput** | 10000 | 11.15 ms | 171.8750 | - | - | 316.43 KB |
-| **StackWithLockThroughput** | 10000 | 12.99 ms | 31.2500 | - | - | 34.39 KB |
-| **ConcurrentStackBulkRange** | 10000 | 19.49 ms (median 9.58 ms) | 203.1250 | 15.6250 | - | 394.42 KB |
-| | | | | | | |
-| **ConcurrentStackThroughput** | 50000 | 29.79 ms (median 8.26 ms) | 625.0000 | 62.5000 | - | 1,566.45 KB |
-| **StackWithLockThroughput** | 50000 | 12.14 ms | 93.7500 | 31.2500 | 31.2500 | 227.98 KB |
-| **ConcurrentStackBulkRange** | 50000 | 223.03 ms | 500.0000 | - | - | 1,956.93 KB |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Concurrency.ConcurrentStackBenchmark-report-github.md).
 
-Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10. Producers and consumers run on dedicated threads, and outcomes depend on core count and scheduler behavior. Several rows have error margins comparable to the mean, so treat differences below about 2x as inconclusive.
+| Method                    | N     | Mean      | Error     | StdDev    | Median    | Gen0     | Gen1     | Allocated  |
+|-------------------------- |------ |----------:|----------:|----------:|----------:|---------:|---------:|-----------:|
+| **ConcurrentStackThroughput** | **10000** | **10.493 ms** | **21.438 ms** |  **9.519 ms** |  **5.787 ms** | **156.2500** |        **-** |  **316.43 KB** |
+| StackWithLockThroughput   | 10000 | 19.315 ms | 21.858 ms |  9.705 ms | 18.023 ms |  46.8750 |        - |   35.51 KB |
+| ConcurrentStackBulkRange  | 10000 | 12.899 ms | 12.192 ms |  5.413 ms |  9.054 ms | 203.1250 |        - |  394.42 KB |
+| **ConcurrentStackThroughput** | **50000** | **19.561 ms** | **21.304 ms** | **11.142 ms** | **14.815 ms** | **666.6667** |        **-** | **1566.45 KB** |
+| StackWithLockThroughput   | 50000 | 13.692 ms |  5.657 ms |  2.017 ms | 13.109 ms |  62.5000 |        - |  219.97 KB |
+| ConcurrentStackBulkRange  | 50000 |  7.307 ms |  7.508 ms |  3.334 ms |  6.086 ms | 375.0000 | 312.5000 | 1956.93 KB |
 
 ### Interpretation
 
-1. **Time is inconclusive**: the lock-free and locked stacks are within noise at N = 10,000, and the ConcurrentStackThroughput N = 50,000 row has a mean (29.8 ms) far from its median (8.3 ms), so the run was dominated by outliers. An earlier version of this page claimed a lock-free advantage at 50,000 and a bulk-range speedup; those results did not reproduce with the corrected benchmark and are withdrawn.
-2. **Allocation is consistent**: ConcurrentStack allocated about 5x to 7x more than the locked Stack<T> (for example 1,566 KB vs 228 KB at N = 50,000), because each Push allocates a linked node.
-3. **Bulk range**: PushRange and TryPopRange are intended to reduce contention on the head pointer. In this run the bulk variant was not faster (and was slowest at N = 50,000), so the benefit is not demonstrated by this benchmark; measure with your own batch sizes before relying on it.
+1. **Timing is inconclusive**: the Error margins are comparable to or larger than the means for several rows, including `ConcurrentStackThroughput` at both sizes. Do not rank the implementations by their means alone. Earlier claims of a lock-free or bulk-range speed advantage are not supported by this run.
+2. **Allocation is higher for the concurrent stack**: at N = 50,000, `ConcurrentStackThroughput` allocated 1.57 MB versus 220 KB for `StackWithLockThroughput`, consistent with allocating a linked node for each push.
+3. **Bulk range**: `PushRange` and `TryPopRange` are intended to reduce contention on the head pointer, but the table does not show a consistent timing advantage across both sizes. Measure with representative batch sizes before relying on a speedup.
 4. **When to use it**: choose ConcurrentStack for LIFO semantics across threads without writing your own locking, not for allocation or raw speed.
 
 ## Practical optimizations

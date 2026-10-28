@@ -65,31 +65,30 @@ dotnet run -c Release -- --filter *Lookup.DictionaryBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Allocated |
-| :--- | :--- | :--- | :--- | :--- |
-| **DictionaryLookup** | 10000 | 6.138 ns | - | - |
-| **ListLookup** | 10000 | 721.414 ns | - | - |
-| **FourLookupUpdate** | 10000 | 17.310 ns | - | - |
-| **TwoLookupTryGetValueUpdate** | 10000 | 12.423 ns | - | - |
-| **SingleLookupGetValueRefUpdate** | 10000 | 7.263 ns | - | - |
-| **LookupWithUnoptimizedStructKey** | 10000 | 58.852 ns | 0.0343 | 72 B |
-| **LookupWithOptimizedStructKey** | 10000 | 6.591 ns | - | - |
-| | | | | |
-| **DictionaryLookup** | 100000 | 9.178 ns | - | - |
-| **ListLookup** | 100000 | 7,293.714 ns | - | - |
-| **FourLookupUpdate** | 100000 | 22.861 ns | - | - |
-| **TwoLookupTryGetValueUpdate** | 100000 | 15.859 ns | - | - |
-| **SingleLookupGetValueRefUpdate** | 100000 | 9.779 ns | - | - |
-| **LookupWithUnoptimizedStructKey** | 100000 | 80.209 ns | 0.0343 | 72 B |
-| **LookupWithOptimizedStructKey** | 100000 | 8.522 ns | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Lookup.DictionaryBenchmark-report-github.md).
 
-Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10; absolute values vary by hardware, so compare ratios rather than nanoseconds.
+| Method                         | N      | Mean         | Error      | StdDev     | Gen0   | Allocated |
+|------------------------------- |------- |-------------:|-----------:|-----------:|-------:|----------:|
+| **DictionaryLookup**               | **10000**  |     **4.773 ns** |  **0.4031 ns** |  **0.2108 ns** |      **-** |         **-** |
+| ListLookup                     | 10000  |   574.105 ns | 15.5259 ns |  8.1203 ns |      - |         - |
+| FourLookupUpdate               | 10000  |    13.303 ns |  0.7678 ns |  0.4016 ns |      - |         - |
+| TwoLookupTryGetValueUpdate     | 10000  |     8.729 ns |  0.8710 ns |  0.3867 ns |      - |         - |
+| SingleLookupGetValueRefUpdate  | 10000  |     5.790 ns |  0.7577 ns |  0.3364 ns |      - |         - |
+| LookupWithUnoptimizedStructKey | 10000  |    43.593 ns |  4.3794 ns |  1.9445 ns | 0.0344 |      72 B |
+| LookupWithOptimizedStructKey   | 10000  |     5.001 ns |  0.1366 ns |  0.0607 ns |      - |         - |
+| **DictionaryLookup**               | **100000** |     **5.580 ns** |  **0.4076 ns** |  **0.1454 ns** |      **-** |         **-** |
+| ListLookup                     | 100000 | 5,591.395 ns | 37.0815 ns | 16.4644 ns |      - |         - |
+| FourLookupUpdate               | 100000 |    14.965 ns |  0.6439 ns |  0.3368 ns |      - |         - |
+| TwoLookupTryGetValueUpdate     | 100000 |    11.327 ns |  2.2877 ns |  1.1965 ns |      - |         - |
+| SingleLookupGetValueRefUpdate  | 100000 |     6.432 ns |  0.2850 ns |  0.1265 ns |      - |         - |
+| LookupWithUnoptimizedStructKey | 100000 |    45.715 ns |  4.5121 ns |  2.3599 ns | 0.0344 |      72 B |
+| LookupWithOptimizedStructKey   | 100000 |     6.471 ns |  0.7380 ns |  0.3277 ns |      - |         - |
 
 ### Interpretation
 
-- **Scaling**: When N grows 10x (10,000 to 100,000), `ListLookup` grows roughly 10x (721 ns to 7,294 ns), as expected for a linear scan. `DictionaryLookup` stays in the same order of magnitude (6.1 ns to 9.2 ns), because the cost depends on the key's hash rather than on the number of items.
-- **Number of lookups per update**: the three update variants differ in how many hash lookups they do. `FourLookupUpdate` does `ContainsKey`, a get, a set and a final get (4 lookups). `TwoLookupTryGetValueUpdate` does `TryGetValue` plus an indexer set (2 lookups). `SingleLookupGetValueRefUpdate` uses `CollectionsMarshal.GetValueRefOrNullRef` and writes through the returned `ref` (1 lookup). At N = 100,000 they take 22.9 ns, 15.9 ns and 9.8 ns respectively, so each removed lookup saves a measurable amount of time.
-- **Struct keys**: a custom `struct` key without `IEquatable<T>` and `GetHashCode()` overrides (`LookupWithUnoptimizedStructKey`) took 58.9 ns to 80.2 ns and allocated 72 B per lookup, versus 6.6 ns to 8.5 ns and no allocation for the optimized key (`LookupWithOptimizedStructKey`). The default equality path goes through `object`-based comparison, which boxes the struct on every call. Implementing `IEquatable<T>` and overriding `GetHashCode()` removes the boxing; see [struct dictionary keys](../advanced/struct-dictionary-keys.md).
+- **Scaling**: `ListLookup` scans the collection, so its work grows with N; `DictionaryLookup` hashes the key and does not scan all entries. Compare matching N rows and use Error and StdDev to judge the size of small differences.
+- **Number of lookups per update**: `FourLookupUpdate`, `TwoLookupTryGetValueUpdate`, and `SingleLookupGetValueRefUpdate` perform four, two, and one dictionary lookups respectively. At N = 100,000, their means were 14.97 ns, 11.33 ns, and 6.43 ns; the latter two comparisons should still be read alongside their Error margins.
+- **Struct keys**: `LookupWithUnoptimizedStructKey` allocated 72 B per operation at N = 100,000, while `LookupWithOptimizedStructKey` allocated none. Implementing `IEquatable<T>` and overriding `GetHashCode()` avoids the boxing path; see [struct dictionary keys](../advanced/struct-dictionary-keys.md).
 
 ## Practical optimizations
 - **Always provide a preallocated initial capacity if known**: If you know how many keys will reside inside your dictionary cache, specify it upfront in the constructor (`new Dictionary<TKey, TValue>(capacity)`). This completely prevents expensive internal resizing operations and array re-allocations.

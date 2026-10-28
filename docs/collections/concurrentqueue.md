@@ -59,20 +59,19 @@ dotnet run -c Release -- --filter *ConcurrentQueueBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ConcurrentQueueThroughput** | 10000 | 33.219 ms (median 22.295 ms) | 31.2500 | - | - | 54.68 KB |
-| **QueueWithLockThroughput** | 10000 | 9.611 ms | 46.8750 | - | - | 34.64 KB |
-| | | | | | | |
-| **ConcurrentQueueThroughput** | 50000 | 24.281 ms | 109.3750 | 31.2500 | 31.2500 | 259.76 KB |
-| **QueueWithLockThroughput** | 50000 | 24.880 ms | 85.9375 | 7.8125 | 7.8125 | 171.47 KB |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Concurrency.ConcurrentQueueBenchmark-report-github.md).
 
-Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10. Producers and consumers run on dedicated threads, and outcomes depend on core count and scheduler behavior. Several rows have error margins comparable to the mean, so treat differences below about 2x as inconclusive.
+| Method                    | N     | Mean      | Error      | StdDev     | Median    | Gen0    | Gen1    | Gen2    | Allocated |
+|-------------------------- |------ |----------:|-----------:|-----------:|----------:|--------:|--------:|--------:|----------:|
+| **ConcurrentQueueThroughput** | **10000** |  **3.831 ms** |  **0.8015 ms** |  **0.4192 ms** |  **3.876 ms** |       **-** |       **-** |       **-** |  **70.88 KB** |
+| QueueWithLockThroughput   | 10000 | 14.480 ms | 29.3278 ms | 13.0217 ms |  9.678 ms | 46.8750 |       - |       - |  35.14 KB |
+| **ConcurrentQueueThroughput** | **50000** | **34.101 ms** | **42.4219 ms** | **22.1875 ms** | **25.491 ms** | **93.7500** | **31.2500** | **31.2500** | **255.74 KB** |
+| QueueWithLockThroughput   | 50000 | 13.068 ms |  6.0249 ms |  2.6751 ms | 12.008 ms | 62.5000 |       - |       - | 227.99 KB |
 
 ### Interpretation
 
-1. **No clear winner**: at N = 50,000 both implementations take about 24 ms. At N = 10,000 the locked queue was faster, but the ConcurrentQueue row has a very large error margin (about 56 ms), so that gap is not reliable. An earlier version of this benchmark showed the locked queue about 7x faster; that came from consumers busy-spinning on an empty queue, and the benchmark has been changed so consumers yield instead.
-2. **Allocation**: ConcurrentQueue allocated more in both runs (260 KB vs 171 KB at N = 50,000), because it links fixed-size segments as it grows.
+1. **Timing is inconclusive**: the mean ordering changes between N = 10,000 and N = 50,000, and the Error margins are large for the locked-queue rows and the N = 50,000 `ConcurrentQueue` row. The consumers yield when the queue is empty, so scheduling noise is part of this workload; do not infer a general winner from these means.
+2. **Allocation**: `ConcurrentQueue` allocated more in both runs (71 KB vs 35 KB at N = 10,000; 256 KB vs 228 KB at N = 50,000), consistent with allocating queue segments as it grows.
 3. **When to use it**: a short, tight lock around a plain Queue<T> is competitive when contention is low and critical sections are tiny. ConcurrentQueue removes the need for you to write and maintain the lock, and it avoids holding a lock while a consumer is descheduled. Choose it for those properties, not for raw benchmark speed.
 
 ## Practical optimizations

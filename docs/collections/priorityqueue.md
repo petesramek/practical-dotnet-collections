@@ -59,21 +59,22 @@ dotnet run -c Release -- --filter *Add.PriorityQueueBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **PriorityQueueThroughput** | 1000 | 30.24 us | 7.9346 | - | - | 16.23 KB |
-| **PreSizedPriorityQueueThroughput** | 1000 | 24.96 us | 3.8452 | - | - | 7.88 KB |
-| **ListStreamingSort** | 1000 | 58.60 us | 3.9673 | - | - | 8.20 KB |
-| | | | | | | |
-| **PriorityQueueThroughput** | 10000 | 567.33 us | 82.0313 | 41.0156 | 41.0156 | 256.33 KB |
-| **PreSizedPriorityQueueThroughput** | 10000 | **509.22 us** | 36.1328 | - | - | **78.20 KB** |
-| **ListStreamingSort** | 10000 | **4,788.42 us** | 54.6875 | - | - | 128.29 KB |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Add.PriorityQueueBenchmark-report-github.md).
+
+| Method                          | N     | Mean        | Error        | StdDev       | Gen0    | Gen1    | Gen2    | Allocated |
+|-------------------------------- |------ |------------:|-------------:|-------------:|--------:|--------:|--------:|----------:|
+| **PriorityQueueThroughput**         | **1000**  |    **45.43 μs** |     **4.992 μs** |     **2.216 μs** |  **7.9346** |       **-** |       **-** |  **16.23 KB** |
+| PreSizedPriorityQueueThroughput | 1000  |    46.52 μs |     2.997 μs |     1.567 μs |  3.8452 |       - |       - |   7.88 KB |
+| ListStreamingSort               | 1000  |    92.54 μs |     9.461 μs |     4.201 μs |  3.9063 |       - |       - |    8.2 KB |
+| **PriorityQueueThroughput**         | **10000** | **1,093.68 μs** |   **358.277 μs** |   **187.386 μs** | **82.0313** | **41.0156** | **41.0156** | **256.33 KB** |
+| PreSizedPriorityQueueThroughput | 10000 |   757.51 μs |    43.659 μs |    19.385 μs | 36.1328 |       - |       - |   78.2 KB |
+| ListStreamingSort               | 10000 | 7,407.75 μs | 2,100.426 μs | 1,098.564 μs | 54.6875 |       - |       - | 128.29 KB |
 
 ### Interpretation
 
-- **The List Sorting Cost**: Maintaining an actively sorted tracking map inside a standard list using binary search lookups and mid-array insertions (`ListStreamingSort`) hits a significant performance wall under scale. At N = 10,000, it takes a **4.78 milliseconds**—making it **nearly 10x slower** than the priority queue. While searching is fast, forcing mid-array element shifting loops on every single insertion destroys application throughput.
-- **The Heap Traversal Advantage**: The `PriorityQueueThroughput` method breezes through the exact same 10,000 element triage workload in just **567 microseconds**. Because it manages relationships using a compact min-heap tree structure rather than sorting the full array on every pass, it moves elements to their relative sorted slots with minimal work. However, the empty initialization forces multiple array doublings, triggering Gen 1 and Gen 2 garbage collection cycles.
-- **The Pre-Sized Payload Optimization**: The `PreSizedPriorityQueueThroughput` track resolves the array expansion tax completely. Specifying the target limit upfront in the constructor (`new PriorityQueue<T, P>(N)`) reduces total allocations down to **78.2 KB** (a **69.5% memory reduction**) and cuts execution time down to 509 us while completely bypassing Gen 1/Gen 2 multi-generation garbage collection pressure.
+- **The list sorting cost**: at N = 10,000, `ListStreamingSort` averaged **7.41 ms**, compared with **1.09 ms** for `PriorityQueueThroughput`. The list repeatedly shifts elements to maintain sorted order.
+- **The heap traversal advantage**: `PriorityQueueThroughput` uses a min-heap rather than sorting the whole list after each insertion. Its N = 10,000 mean was lower than the list's, though the Error margins are substantial for both rows.
+- **Pre-sized capacity**: `PreSizedPriorityQueueThroughput` allocated **78.2 KB** at N = 10,000 versus **256 KB** for the default queue. Its mean was also lower (758 us vs 1,094 us), but the timing Error ranges overlap; this run does not establish a reliable speedup.
 
 ## Practical optimizations
 - Use when continuous priority processing required

@@ -58,25 +58,25 @@ dotnet run -c Release -- --filter *Memory.ImmutableListBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **ImmutableListAdd** | 1000 | 183,936.2602 ns | 240.4785 | - | 502,896 B |
-| **ImmutableListWithBuilderAdd** | 1000 | 95,319.7534 ns | 22.9492 | - | 48,024 B |
-| **ListAdd** | 1000 | 2,606.9691 ns | 4.0207 | - | 8,424 B |
-| **ImmutableListRead** | 1000 | 83.0917 ns | - | - | - |
-| **ListRead** | 1000 | 0.8572 ns | - | - | - |
-| | | | | | |
-| **ImmutableListAdd** | 10000 | 2,656,093.8779 ns | 1687.5000 | 781.2500 | 6,653,616 B |
-| **ImmutableListWithBuilderAdd** | 10000 | 1,260,724.5687 ns | 105.4688 | 58.5938 | 480,024 B |
-| **ListAdd** | 10000 | 26,252.5542 ns | 62.4695 | - | 131,400 B |
-| **ImmutableListRead** | 10000 | 80.7988 ns | - | - | - |
-| **ListRead** | 10000 | 0.8093 ns | - | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Memory.ImmutableListBenchmark-report-github.md).
+
+| Method                      | N     | Mean             | Error           | StdDev         | Gen0      | Gen1     | Allocated |
+|---------------------------- |------ |-----------------:|----------------:|---------------:|----------:|---------:|----------:|
+| **ImmutableListAdd**            | **1000**  |   **210,658.097 ns** |   **8,544.0492 ns** |  **3,793.6108 ns** |  **240.4785** |        **-** |  **502896 B** |
+| ImmutableListWithBuilderAdd | 1000  |   121,376.604 ns |   8,364.2537 ns |  4,374.6664 ns |   22.9492 |        - |   48024 B |
+| ListAdd                     | 1000  |     3,549.350 ns |     350.1170 ns |    183.1180 ns |    4.0207 |        - |    8424 B |
+| ImmutableListRead           | 1000  |       140.030 ns |      27.3203 ns |     14.2890 ns |         - |        - |         - |
+| ListRead                    | 1000  |         1.108 ns |       0.1031 ns |      0.0539 ns |         - |        - |         - |
+| **ImmutableListAdd**            | **10000** | **3,646,441.298 ns** | **240,180.7835 ns** | **85,650.7810 ns** | **1734.3750** | **648.4375** | **6653616 B** |
+| ImmutableListWithBuilderAdd | 10000 | 1,611,571.920 ns |  96,405.3003 ns | 50,421.8362 ns |  103.5156 |  62.5000 |  480024 B |
+| ListAdd                     | 10000 |    34,370.388 ns |   1,063.0599 ns |    556.0009 ns |   62.4390 |        - |  131400 B |
+| ImmutableListRead           | 10000 |       121.154 ns |      29.1173 ns |     15.2289 ns |         - |        - |         - |
+| ListRead                    | 10000 |         1.070 ns |       0.0269 ns |      0.0119 ns |         - |        - |         - |
 
 ### Interpretation
 
-- **The Item-Loop Node Allocation Cost**: Appending 10,000 items item-by-item using `.Add()` (`ImmutableListAdd`) is a significant performance pitfall. It takes **2.65 milliseconds** and pollutes the heap with **6.6 Megabytes** of garbage data, generating significant Gen 0 and Gen 1 garbage collection loops. This happens because the internal engine must instantiate and re-balance deep binary tree branches on every element added.
-- **The Builder Stabilization Effect**: The `ImmutableListWithBuilderAdd` method balances this construction overhead. Utilizing the companion staging container (`ImmutableList.CreateBuilder<T>`) cuts memory generation down to **480 KB** (a **92.7% memory reduction**) and speeds up processing time by over 2x. Items are held flatly, compiling tree node structures once when `. ToImmutable()` is executed.
-- **The Index Reading Penalty**: On index lookup execution paths (`ImmutableListRead`), the collection is **nearly 100x slower** than a standard `List<T>` (~80.7 ns vs ~0.8 ns). A standard list maps index references to direct hardware array offsets immediately (O(1)). In contrast, `ImmutableList` must step sequentially down through layers of branch nodes to find indices within its internal binary tree layout.
+- **The item-loop allocation cost**: at N = 10,000, `ImmutableListAdd` averaged **3.65 ms** and allocated **6.65 MB**. The builder averaged **1.61 ms** and allocated **480 KB**, substantially reducing both costs in this run.
+- **Indexing cost**: at N = 10,000, `ImmutableListRead` averaged **121 ns** versus **1.07 ns** for `ListRead`. This microbenchmark shows a much higher cost for immutable-list indexing; use the table's Error and StdDev columns when comparing measurements.
 
 ## Practical optimizations
 - Use builder (ImmutableList.CreateBuilder) for bulk operations

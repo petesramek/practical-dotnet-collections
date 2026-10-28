@@ -56,23 +56,24 @@ dotnet run -c Release -- --filter *Iteration.ReadOnlyCollectionBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Allocated |
-| :--- | :--- | :--- | :--- | :--- |
-| **IterateListForeach** | 1000 | 472.9 ns | - | - |
-| **IterateReadOnlyCollectionForeach** | 1000 | 2,234.1 ns | 0.0191 | 40 B |
-| **IterateListForIndex** | 1000 | 542.0 ns | - | - |
-| **IterateReadOnlyCollectionForIndex** | 1000 | 1,367.6 ns | - | - |
-| | | | | |
-| **IterateListForeach** | 10000 | 4,548.3 ns | - | - |
-| **IterateReadOnlyCollectionForeach** | 10000 | **21,969.1 ns** | - | **40 B** |
-| **IterateListForIndex** | 10000 | **5,256.8 ns** | - | - |
-| **IterateReadOnlyCollectionForIndex** | 10000 | **13,043.0 ns** | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Iteration.ReadOnlyCollectionBenchmark-report-github.md).
+
+| Method                            | N     | Mean        | Error     | StdDev    | Gen0   | Allocated |
+|---------------------------------- |------ |------------:|----------:|----------:|-------:|----------:|
+| **IterateListForeach**                | **1000**  |    **547.8 ns** |   **6.77 ns** |   **3.01 ns** |      **-** |         **-** |
+| IterateReadOnlyCollectionForeach  | 1000  |  2,626.1 ns |  43.02 ns |  19.10 ns | 0.0191 |      40 B |
+| IterateListForIndex               | 1000  |    650.3 ns |  47.91 ns |  25.06 ns |      - |         - |
+| IterateReadOnlyCollectionForIndex | 1000  |  1,622.5 ns |  39.73 ns |  17.64 ns |      - |         - |
+| **IterateListForeach**                | **10000** |  **5,425.6 ns** |  **91.30 ns** |  **40.54 ns** |      **-** |         **-** |
+| IterateReadOnlyCollectionForeach  | 10000 | 26,266.8 ns | 641.90 ns | 335.73 ns |      - |      40 B |
+| IterateListForIndex               | 10000 |  6,340.0 ns | 105.29 ns |  55.07 ns |      - |         - |
+| IterateReadOnlyCollectionForIndex | 10000 | 15,840.8 ns | 188.65 ns |  83.76 ns |      - |         - |
 
 ### Interpretation
 
-- **The Foreach Interface Trap**: Iterating a `ReadOnlyCollection` using an item loop (`IterateReadOnlyCollectionForeach`) is a measurable performance pitfall. At N = 10,000, it takes a **21.9 microseconds**—making it **nearly 5x slower** than the native list loop. Because the wrapper masks the underlying types, the JIT cannot optimize loop paths. It forces .NET to fallback to a generic `IEnumerable<T>` virtual interface method lookup and leaves a **40-Byte** generic enumerator allocation on the heap on every entry run.
-- **The Struct Enumerator Advantage**: The `IterateListForeach` track runs in **4.5 microseconds** with zero heap allocations. When a loop hits a direct list type, the C# compiler uses a specialized, pre-compiled value-type struct enumerator (`List<T>.Enumerator`), which runs inline directly inside CPU registers without virtual calls.
-- **The Index Traversal Optimization**: The `IterateReadOnlyCollectionForIndex` method highlights the proper optimization path for wrapped collections. Changing your loop check from a `foreach` statement to an index-bound `for` loop cuts processing delays down to **13.0 microseconds**—speeding up execution by **over 40%** while removing the heap garbage allocation footprint completely. Index access bypasses enumerator state machines, calling internal array offsets through direct reference delegation.
+- **The foreach interface cost**: at N = 10,000, `IterateReadOnlyCollectionForeach` averaged **26.3 us** versus **5.43 us** for `IterateListForeach`, and allocated 40 B. The wrapped collection's enumeration path is more expensive in this benchmark.
+- **Direct list enumeration**: `IterateListForeach` allocated nothing in this run, consistent with its specialized value-type enumerator.
+- **Index-based iteration**: `IterateReadOnlyCollectionForIndex` averaged **15.8 us** at N = 10,000 versus **26.3 us** for the read-only foreach path, with no allocation. The means favor indexing here; use the table's Error columns to assess the size of the difference.
 
 ## Practical optimizations
 - Use for API boundaries
