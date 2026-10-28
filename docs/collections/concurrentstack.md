@@ -35,8 +35,8 @@ Lock-free stack using compare-and-swap operations.
 
 ## Complexity overview
 
-- **Push Operations**: Near-instant pointer pointer index assignment. 
-- **TryPop Operations**: Near-instant node subtraction if items exist on the head.
+- **Push Operations**: Fast pointer index assignment. 
+- **TryPop Operations**: Fast node subtraction if items exist on the head.
 
 ## Benchmark results
 
@@ -61,28 +61,29 @@ dotnet run -c Release -- --filter *ConcurrentStackBenchmark*
 
 | Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ConcurrentStackThroughput** | 10000 | 3.310 ms | 93.7500 | 31.2500 | - | 313.61 KB |
-| **StackWithLockThroughput** | 10000 | 2.445 ms | 19.5313 | - | - | 42.14 KB |
-| **ConcurrentStackBulkRange** | 10000 | 2.247 ms | 191.4063 | 3.9063 | - | 391.85 KB |
+| **ConcurrentStackThroughput** | 10000 | 11.15 ms | 171.8750 | - | - | 316.43 KB |
+| **StackWithLockThroughput** | 10000 | 12.99 ms | 31.2500 | - | - | 34.39 KB |
+| **ConcurrentStackBulkRange** | 10000 | 19.49 ms (median 9.58 ms) | 203.1250 | 15.6250 | - | 394.42 KB |
 | | | | | | | |
-| **ConcurrentStackThroughput** | 50000 | 4.827 ms | 281.2500 | 234.3750 | - | 1563.62 KB |
-| **StackWithLockThroughput** | 50000 | 6.266 ms | 85.9375 | 39.0625 | 39.0625 | 248.48 KB |
-| **ConcurrentStackBulkRange** | 50000 | **2.775 ms** | 398.4375 | 257.8125 | - | 1954.32 KB |
+| **ConcurrentStackThroughput** | 50000 | 29.79 ms (median 8.26 ms) | 625.0000 | 62.5000 | - | 1,566.45 KB |
+| **StackWithLockThroughput** | 50000 | 12.14 ms | 93.7500 | 31.2500 | 31.2500 | 227.98 KB |
+| **ConcurrentStackBulkRange** | 50000 | 223.03 ms | 500.0000 | - | - | 1,956.93 KB |
+
+Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10. Producers and consumers run on dedicated threads, and outcomes depend on core count and scheduler behavior. Several rows have error margins comparable to the mean, so treat differences below about 2x as inconclusive.
 
 ### Interpretation
 
-The metrics expose two vital architectural facts regarding single-pointer contention tracks:
-
-1. **The Small-Scale Contention Trap:** At small scales (N = 10,000), individual operations inside `ConcurrentStackThroughput` are slower than a plain stack protected by a global monitor lock (3.31 ms vs 2.44 ms). This occurs because `ConcurrentStack` manages additions and subtractions by executing continuous `Interlocked.CompareExchange` loops on a single global Head pointer. When threads hammer the exact same pointer slot concurrently, repeated validation failures force the hardware into expensive retry cycles. 
-2. **The High-Contention Tipping Point:** As load scales to N = 50,000, the lock-free structure begins to outpace the lock. `ConcurrentStackThroughput` completes in 4.82 ms, whereas the locked stack degrades to 6.26 ms and triggers heavy Gen 1/Gen 2 garbage collection cycles. While lock retries burn CPU cycles, they prevent operating system threads from physically putting themselves to sleep (context switching), which keeps high-volume execution fluid.
-3. **The Bulk Range Victory:** The ultimate optimization edge of `ConcurrentStack` is validated by `ConcurrentStackBulkRange`. At N = 50,000, using `.PushRange()` and `.TryPopRange()` cuts execution time down to **2.77 ms**—making it over **2.2x faster than a locked stack** and roughly **1.7x faster than the item-by-item lock-free loop**. Threads build or drain their linked list node branches entirely in private local arrays, touching the volatile global Head pointer exactly *once* per batch to swap states. This design removes thread cache collisions, delivering maximum execution speed under load.
+1. **Time is inconclusive**: the lock-free and locked stacks are within noise at N = 10,000, and the ConcurrentStackThroughput N = 50,000 row has a mean (29.8 ms) far from its median (8.3 ms), so the run was dominated by outliers. An earlier version of this page claimed a lock-free advantage at 50,000 and a bulk-range speedup; those results did not reproduce with the corrected benchmark and are withdrawn.
+2. **Allocation is consistent**: ConcurrentStack allocated about 5x to 7x more than the locked Stack<T> (for example 1,566 KB vs 228 KB at N = 50,000), because each Push allocates a linked node.
+3. **Bulk range**: PushRange and TryPopRange are intended to reduce contention on the head pointer. In this run the bulk variant was not faster (and was slowest at N = 50,000), so the benefit is not demonstrated by this benchmark; measure with your own batch sizes before relying on it.
+4. **When to use it**: choose ConcurrentStack for LIFO semantics across threads without writing your own locking, not for allocation or raw speed.
 
 ## Practical optimizations
 - **Always prefer bulk methods when working with datasets**: If you have multiple elements to insert or remove from a concurrent stack, do not use iterative loops calling `.Push()` or `.TryPop()`. Use `.PushRange()` and `.TryPopRange()` to execute the operations in a single, high-speed atomic operation.
 - **Avoid querying counts**: Checking `.Count` on a lock-free linked collection forces the thread to iterate through the entire linked chain of items node-by-item. Rely entirely on `.TryPop()` or `.TryPopRange()` to evaluate availability safely.
 
 ## Common mistakes
-- **Using in single-threaded code**: Instantiating a `ConcurrentStack` when only one execution path handles updates incurs completely useless pointer tracking overhead. Use a standard `Stack<T>` instead.
+- **Using in single-threaded code**: Instantiating a `ConcurrentStack` when only one execution path handles updates incurs unnecessary pointer tracking overhead. Use a standard `Stack<T>` instead.
 - **Using single-element pushes under extreme multi-threaded stress**: If dozens of background threads are non-stop slamming a singular `ConcurrentStack` with individual items, they will encounter heavy CAS collision stalls. Switch to `ConcurrentQueue` (which decouples head and tail pointers) or use bulk range arrays.
 
 ## When I would choose it

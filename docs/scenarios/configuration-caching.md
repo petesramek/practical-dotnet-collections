@@ -19,12 +19,12 @@ Using Dictionary<TKey, TValue>:
 
 Convert to FrozenDictionary after load:
 
-`csharp
+```csharp
 var config = LoadConfiguration();
 var frozen = config.ToFrozenDictionary();
 
 var value = frozen[key];
-`
+```
 
 ---
 

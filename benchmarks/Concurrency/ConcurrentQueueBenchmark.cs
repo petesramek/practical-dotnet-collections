@@ -1,11 +1,13 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections.Concurrent;
+using static PracticalDotNetCollections.Benchmarks.Concurrency.BenchmarkThreads;
 
 namespace PracticalDotNetCollections.Benchmarks.Concurrency;
 
 /// <summary>
-/// Benchmarks evaluating <see cref="ConcurrentQueue{T}"/> performance against a locked standard <see cref="Queue{T}"/>.
-/// Measures thread contention profiles across decoupled segment pointers versus full global mutual exclusion loops.
+/// Benchmarks comparing <see cref="ConcurrentQueue{T}"/> against a standard <see cref="Queue{T}"/> protected by a lock.
+/// Both variants use dedicated threads, the same producer/consumer counts, and yield when the queue is empty.
+/// Results depend heavily on core count and contention; treat them as one data point, not a general ranking.
 /// </summary>
 [MemoryDiagnoser]
 public class ConcurrentQueueBenchmark {
@@ -19,20 +21,22 @@ public class ConcurrentQueueBenchmark {
     public int N;
 
     /// <summary>
-    /// Measures raw concurrent throughput using specialized lock-free segment chunks.
+    /// Lock-free ConcurrentQueue with polling consumers.
     /// </summary>
     [Benchmark]
     public void ConcurrentQueueThroughput() {
         var queue = new ConcurrentQueue<int>();
         int itemsPerProducer = N / ProducerCount;
-        long totalConsumed = 0;
+        int remaining = itemsPerProducer * ProducerCount;
 
         var consumers = new Task[ConsumerCount];
         for (int i = 0; i < ConsumerCount; i++) {
-            consumers[i] = Task.Run(() => {
-                while (Interlocked.Read(ref totalConsumed) < N) {
+            consumers[i] = Start(() => {
+                while (Volatile.Read(ref remaining) > 0) {
                     if (queue.TryDequeue(out _)) {
-                        Interlocked.Increment(ref totalConsumed);
+                        Interlocked.Decrement(ref remaining);
+                    } else {
+                        Thread.Yield();
                     }
                 }
             });
@@ -40,7 +44,7 @@ public class ConcurrentQueueBenchmark {
 
         var producers = new Task[ProducerCount];
         for (int i = 0; i < ProducerCount; i++) {
-            producers[i] = Task.Run(() => {
+            producers[i] = Start(() => {
                 for (int j = 0; j < itemsPerProducer; j++) {
                     queue.Enqueue(j);
                 }
@@ -52,24 +56,28 @@ public class ConcurrentQueueBenchmark {
     }
 
     /// <summary>
-    /// Measures concurrent performance using a standard queue protected by an exclusive monitor lock block.
+    /// Standard Queue guarded by a monitor lock with polling consumers.
     /// </summary>
     [Benchmark]
     public void QueueWithLockThroughput() {
         var queue = new Queue<int>();
         var locker = new object();
         int itemsPerProducer = N / ProducerCount;
-        long totalConsumed = 0;
+        int remaining = itemsPerProducer * ProducerCount;
 
         var consumers = new Task[ConsumerCount];
         for (int i = 0; i < ConsumerCount; i++) {
-            consumers[i] = Task.Run(() => {
-                while (Interlocked.Read(ref totalConsumed) < N) {
+            consumers[i] = Start(() => {
+                while (Volatile.Read(ref remaining) > 0) {
+                    bool dequeued;
                     lock (locker) {
-                        if (queue.Count > 0) {
-                            queue.Dequeue();
-                            Interlocked.Increment(ref totalConsumed);
-                        }
+                        dequeued = queue.TryDequeue(out _);
+                    }
+
+                    if (dequeued) {
+                        Interlocked.Decrement(ref remaining);
+                    } else {
+                        Thread.Yield();
                     }
                 }
             });
@@ -77,7 +85,7 @@ public class ConcurrentQueueBenchmark {
 
         var producers = new Task[ProducerCount];
         for (int i = 0; i < ProducerCount; i++) {
-            producers[i] = Task.Run(() => {
+            producers[i] = Start(() => {
                 for (int j = 0; j < itemsPerProducer; j++) {
                     lock (locker) {
                         queue.Enqueue(j);

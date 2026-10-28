@@ -33,7 +33,7 @@ Doubly-linked list of nodes.
 
 ## Complexity overview
 
-- **Front/Back Mutations (`AddFirst`/`AddLast`)**: Instant constant-time pointer assignments.
+- **Front/Back Mutations (`AddFirst`/`AddLast`)**: Constant-time constant-time pointer assignments.
 - **Index Lookups**: Linear node-by-node traversal loops.
 
 ## Benchmark results
@@ -71,13 +71,13 @@ dotnet run -c Release -- --filter *Add.LinkedListBenchmark*
 
 ### Interpretation
 
-- **The Array Shifting Catastrophe**: Appending items to the absolute front of a standard list (`ListInsertAtBeginning`) is a severe performance pitfall. At N = 10,000, it takes a brutal **4.67 milliseconds**. Because arrays are contiguous, adding an item at index 0 forces the CPU to copy and shift all existing 9,999 items forward by one memory slot on every single loop pass.
-- **The Head Insertion Victory**: The `LinkedListAddFirst` method bypasses this shifting cost entirely, completing the exact same 10,000 element front-insertion pass in just **152 microseconds**—making it **over 30x faster** than a standard list. It allocates a node and updates the head references instantly without touching any existing memory slots. However, notice the allocation tax: it generates **480 KB** of heap memory trash (nearly 4x more than the list) and forces heavy garbage collection cleanups due to creating 10,000 independent wrapper objects.
-- **The Index Reading Penalty**: On index-based lookup execution paths, the structural comparison flips dramatically. `ListReadIndex` performs constant-time lookups in a flat **0.85 ns** regardless of data scale because it calculates memory hardware offsets directly. In contrast, `LinkedListReadIndex` takes **5,567.5 ns**—making it **nearly 6,500x slower**. Because a linked list lacks contiguous memory offsets, it must traverse from node to node to resolve an index.
+- **The Array Shifting Cost**: Appending items to the front of a standard list (`ListInsertAtBeginning`) is a significant performance pitfall. At N = 10,000, it takes a **4.67 milliseconds**. Because arrays are contiguous, adding an item at index 0 forces the CPU to copy and shift all existing 9,999 items forward by one memory slot on every single loop pass.
+- **The Head Insertion Result**: The `LinkedListAddFirst` method bypasses this shifting cost entirely, completing the exact same 10,000 element front-insertion pass in just **152 microseconds**—making it **over 30x faster** than a standard list. It allocates a node and updates the head references immediately without touching any existing memory slots. However, notice the allocation tax: it generates **480 KB** of heap memory trash (nearly 4x more than the list) and forces heavy garbage collection cleanups due to creating 10,000 independent wrapper objects.
+- **The Index Reading Penalty**: On index-based lookup execution paths, the structural comparison reverses. `ListReadIndex` performs constant-time lookups in a flat **0.85 ns** regardless of data scale because it calculates memory hardware offsets directly. In contrast, `LinkedListReadIndex` takes **5,567.5 ns**—making it **nearly 6,500x slower**. Because a linked list lacks contiguous memory offsets, it must traverse from node to node to resolve an index.
 
 ## Practical optimizations
 - Use when insert/remove dominates
-- **Always preserve node references during iterations if splicing**: If your algorithm loops through a linked list and removes or adds elements based on complex logic, do not use values directly. Leverage the explicit `LinkedListNode<T>` object reference properties (`.First`, `.Next`, `.Previous`). Passing the target node object straight to `.Remove()` or `.AddAfter()` executes in instant constant time, removing secondary scan loops.
+- **Always preserve node references during iterations if splicing**: If your algorithm loops through a linked list and removes or adds elements based on complex logic, do not use values directly. Leverage the explicit `LinkedListNode<T>` object reference properties (`.First`, `.Next`, `.Previous`). Passing the target node object straight to `.Remove()` or `.AddAfter()` executes in fast constant time, removing secondary scan loops.
 - **Rely strictly on linear foreach or stream cursors**: Never write index-bound loops (such as using a `for` loop accessing `list.ElementAt(i)`) over a `LinkedList<T>`. This creates an exponential performance degradation because every single iteration restarts a node pointer scan from the head.
 
 ## Common mistakes

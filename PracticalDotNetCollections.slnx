@@ -10,7 +10,6 @@
   <Folder Name="/docs/collections/">
     <File Path="docs/collections/bitarray.md" />
     <File Path="docs/collections/blockingcollection.md" />
-    <File Path="docs/collections/channel.md" />
     <File Path="docs/collections/concurrentbag.md" />
     <File Path="docs/collections/concurrentdictionary.md" />
     <File Path="docs/collections/concurrentqueue.md" />
@@ -45,6 +44,9 @@
     <File Path="docs/comparisons/list-vs-linkedlist.md" />
     <File Path="docs/comparisons/sorteddictionary-vs-sortedlist.md" />
   </Folder>
+  <Folder Name="/docs/related-types/">
+    <File Path="docs/related-types/channel.md" />
+  </Folder>
   <Folder Name="/docs/scenarios/">
     <File Path="docs/scenarios/async-pipeline.md" />
     <File Path="docs/scenarios/concurrent-deduplication.md" />
@@ -56,7 +58,6 @@
   <Folder Name="/samples/">
     <File Path="samples/bitarray-permission-validation.cs" />
     <File Path="samples/blockingcollection-log-processing.cs" />
-    <File Path="samples/channel-log-processing.cs" />
     <File Path="samples/concurrentbag-task-distribution.cs" />
     <File Path="samples/concurrentdictionary-state-cache.cs" />
     <File Path="samples/concurrentqueue-log-streaming.cs" />
@@ -79,5 +80,8 @@
     <File Path="samples/sortedlist-lookup-registry.cs" />
     <File Path="samples/sortedset-analytics-tracker.cs" />
     <File Path="samples/stack-undo-actions.cs" />
+  </Folder>
+  <Folder Name="/samples/related-types/">
+    <File Path="samples/related-types/channel-log-processing.cs" />
   </Folder>
 </Solution>

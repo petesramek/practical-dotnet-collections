@@ -23,7 +23,7 @@ Standard queues process items in FIFO order:
 
 Use PriorityQueue<TElement, TPriority>:
 
-`csharp
+```csharp
 var queue = new PriorityQueue<string, int>();
 
 queue.Enqueue("low", 3);
@@ -35,7 +35,7 @@ while (queue.Count > 0)
     var item = queue.Dequeue();
     Console.WriteLine(item);
 }
-`
+```
 
 ---
 
@@ -66,10 +66,10 @@ while (queue.Count > 0)
 
 Using sorting repeatedly:
 
-`csharp
+```csharp
 list.Add(item);
 list.Sort();
-`
+```
 
 - repeatedly sorts entire dataset
 - inefficient for continuous processing

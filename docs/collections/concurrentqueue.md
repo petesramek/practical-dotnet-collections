@@ -35,8 +35,8 @@ Lock-free, segment-based queue optimized for concurrent access.
 
 ## Complexity overview
 
-- **Enqueue Operations**: Near-instant pointer index assignment. 
-- **TryDequeue Operations**: Near-instant extraction if items exist in the active head segment.
+- **Enqueue Operations**: Fast pointer index assignment. 
+- **TryDequeue Operations**: Fast extraction if items exist in the active head segment.
 
 ## Benchmark results
 
@@ -61,19 +61,19 @@ dotnet run -c Release -- --filter *ConcurrentQueueBenchmark*
 
 | Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ConcurrentQueueThroughput** | 10000 | 34.379 ms | - | - | - | 126.92 KB |
-| **QueueWithLockThroughput** | 10000 | 3.274 ms | 23.4375 | - | - | 50.5 KB |
+| **ConcurrentQueueThroughput** | 10000 | 33.219 ms (median 22.295 ms) | 31.2500 | - | - | 54.68 KB |
+| **QueueWithLockThroughput** | 10000 | 9.611 ms | 46.8750 | - | - | 34.64 KB |
 | | | | | | | |
-| **ConcurrentQueueThroughput** | 50000 | 43.087 ms | 76.9231 | 76.9231 | 76.9231 | 468.34 KB |
-| **QueueWithLockThroughput** | 50000 | 6.472 ms | 78.1250 | 46.8750 | 46.8750 | 291.49 KB |
+| **ConcurrentQueueThroughput** | 50000 | 24.281 ms | 109.3750 | 31.2500 | 31.2500 | 259.76 KB |
+| **QueueWithLockThroughput** | 50000 | 24.880 ms | 85.9375 | 7.8125 | 7.8125 | 171.47 KB |
+
+Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10. Producers and consumers run on dedicated threads, and outcomes depend on core count and scheduler behavior. Several rows have error margins comparable to the mean, so treat differences below about 2x as inconclusive.
 
 ### Interpretation
 
-The metrics expose an essential architectural reality regarding lock-free collection structures:
-
-1. **The Lock-Free Throughput Penalty:** The numbers reveal that a standard queue wrapped in an exclusive global `lock` runs **nearly 7x faster** than `ConcurrentQueue` (~6.4 ms vs ~43.0 ms at N = 50,000). This occurs because `ConcurrentQueue` utilizes complex atomic memory synchronization checks (`Interlocked` loops and state comparisons) to manage its segmented tracking architecture across multiple threads. Under tight, non-stop thread loop collisions from an empty state, this logic generates significantly higher CPU spinning cycles than a plain hardware mutex loop lock.
-2. **The Allocation Overhead:** `ConcurrentQueue` allocates more lifetime memory over the benchmark execution. This is expected due to the structural overhead of creating tracking references for each internal multi-element array chunk segment.
-3. **The Lock-Free Use Case Reality:** Lock-free data structures are built to protect applications from thread blocking and lock saturation—not to speed up tight insertion loop benchmarks. In real-world enterprise architectures where processing logic or I/O waits exist between insertions, the global lock on a standard queue creates massive thread blocking stalls. `ConcurrentQueue` prevents this by ensuring threads can always make execution progress independently.
+1. **No clear winner**: at N = 50,000 both implementations take about 24 ms. At N = 10,000 the locked queue was faster, but the ConcurrentQueue row has a very large error margin (about 56 ms), so that gap is not reliable. An earlier version of this benchmark showed the locked queue about 7x faster; that came from consumers busy-spinning on an empty queue, and the benchmark has been changed so consumers yield instead.
+2. **Allocation**: ConcurrentQueue allocated more in both runs (260 KB vs 171 KB at N = 50,000), because it links fixed-size segments as it grows.
+3. **When to use it**: a short, tight lock around a plain Queue<T> is competitive when contention is low and critical sections are tiny. ConcurrentQueue removes the need for you to write and maintain the lock, and it avoids holding a lock while a consumer is descheduled. Choose it for those properties, not for raw benchmark speed.
 
 ## Practical optimizations
 - **Avoid manually tracking counts**: Do not write loops that check `.Count` before pulling items. Querying the count forces .NET to traverse the segment chain, hurting performance. Rely entirely on `.TryDequeue()` to handle presence testing and item extraction in a single, safe step.

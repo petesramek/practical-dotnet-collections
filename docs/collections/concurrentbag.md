@@ -35,8 +35,8 @@ Uses thread-local storage and work-stealing algorithms.
 
 ## Complexity overview
 
-- **Add Operations**: Near-instant element tracking when localizing to the current thread queue.
-- **Take Operations**: Near-instant and lock-free if the item exists in the thread's local queue. Incurs synchronization delays if it must steal from another thread.
+- **Add Operations**: Fast element tracking when localizing to the current thread queue.
+- **Take Operations**: Fast and lock-free if the item exists in the thread's local queue. Incurs synchronization delays if it must steal from another thread.
 
 ## Benchmark results
 
@@ -61,23 +61,23 @@ dotnet run -c Release -- --filter *ConcurrentBagBenchmark*
 
 | Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ThreadLocalConcurrentBag** | 10000 | 95.82 us | 23.6816 | 23.5596 | 3.4180 | 117.21 KB |
-| **ThreadLocalListWithLock** | 10000 | 445.48 us | 34.1797 | - | - | 65.4 KB |
-| **WorkStealingConcurrentBag** | 10000 | 689.58 us | 24.4141 | 23.4375 | 3.9063 | 129.7 KB |
-| **WorkStealingConcurrentQueue** | 10000 | 2,039.78 us | 58.5938 | 11.7188 | - | 132.82 KB |
+| **ThreadLocalConcurrentBag** | 10000 | 128.0 us | 22.9492 | 22.7051 | 6.8359 | 114.41 KB |
+| **ThreadLocalListWithLock** | 10000 | 589.1 us | 34.1797 | - | - | 66.69 KB |
+| **WorkStealingConcurrentBag** | 10000 | 885.9 us | 25.3906 | 24.4141 | 7.8125 | 129.61 KB |
+| **WorkStealingConcurrentQueue** | 10000 | 2,475.0 us | 58.5938 | 11.7188 | - | 132.81 KB |
 | | | | | | | |
-| **ThreadLocalConcurrentBag** | 50000 | 357.30 us | 86.9141 | 86.4258 | 39.5508 | 505.11 KB |
-| **ThreadLocalListWithLock** | 50000 | 2,274.97 us | 113.2813 | 113.2813 | 113.2813 | 483.52 KB |
-| **WorkStealingConcurrentBag** | 50000 | 3,508.61 us | 78.1250 | 74.2188 | 27.3438 | 514.05 KB |
-| **WorkStealingConcurrentQueue** | 50000 | 11,227.34 us | 109.3750 | 109.3750 | 109.3750 | 517.77 KB |
+| **ThreadLocalConcurrentBag** | 50000 | 547.0 us | 83.0078 | 82.0313 | 29.2969 | 482.52 KB |
+| **ThreadLocalListWithLock** | 50000 | 3,108.2 us | 113.2813 | 113.2813 | 113.2813 | 492.52 KB |
+| **WorkStealingConcurrentBag** | 50000 | 4,185.1 us | 78.1250 | 70.3125 | 31.2500 | 515.01 KB |
+| **WorkStealingConcurrentQueue** | 50000 | 13,227.4 us | 109.3750 | 109.3750 | 109.3750 | 517.78 KB |
+
+Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10. Results depend on core count and scheduler behavior.
 
 ### Interpretation
 
-The metrics expose two vital architectural facts regarding thread coordination:
-
-1. **The Thread-Local Dominance:** In pure thread-local patterns where threads consume exactly what they produce, `ConcurrentBag` runs over 6x faster than a traditionally locked list (~357 us vs ~2,274 us at N = 50,000). By utilizing decentralized, thread-specific storage tracks, it eliminates global lock contention entirely.
-2. **The Work-Stealing Penalty and Unexpected Speed:** Under a split model where producers populate the collection before separate consumers drain it, `ConcurrentBag` encounters its internal work-stealing logic. This adds a minor execution delay compared to its optimal thread-local state. However, in this specific batch-based scenario, `ConcurrentBag` remains roughly 3x faster than `ConcurrentQueue` (~3.5 ms vs ~11.2 ms). This occurs because `ConcurrentQueue` suffers heavy multi-threaded contention on its global head/tail pointers when multiple consumer threads bombard the exact same memory slots simultaneously. 
-3. **The Order Disregard Factor:** `ConcurrentBag` achieves these execution metrics because it makes zero promises regarding data ordering. It is a completely unordered bucket. If your system requires items to exit in a strict arrival sequence (FIFO) or reverse arrival sequence (LIFO), you cannot trade that correctness for speed.
+1. **Thread-local pattern**: when each thread consumes what it produced, ConcurrentBag was about 5.7x faster than a locked List<T> (547 us vs 3,108 us at N = 50,000). Each thread uses its own local storage, so there is little shared contention. This is the scenario the type is designed for.
+2. **Work-stealing pattern**: when producers fill the bag and different consumers drain it, ConcurrentBag has to steal from other threads' lists and is slower than in the thread-local case. In this benchmark it was still about 3x faster than ConcurrentQueue (4.2 ms vs 13.2 ms at N = 50,000). Consumers in both variants yield on empty, so part of that gap may reflect scheduling rather than the collections themselves.
+3. **No ordering**: ConcurrentBag makes no ordering promises. If you need FIFO or LIFO, use ConcurrentQueue<T> or ConcurrentStack<T> instead of trading correctness for speed.
 
 ## Practical optimizations
 - **Keep work items localized to the originating thread**: Structure your background worker logic so that threads push metadata objects into the bag and pull them back out inside their own execution cycles, keeping the code on the optimal lock-free path.

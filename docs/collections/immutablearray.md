@@ -34,7 +34,7 @@ Backed by an array. Mutations create new arrays (copy-on-write behavior).
 
 ## Complexity overview
 
-- **Index Lookups**: Instant direct hardware array offset mapping.
+- **Index Lookups**: Constant-time direct hardware array offset mapping.
 - **Item Mutations**: Linear array copy replication, unless processed via an optimized staging container.
 
 ## Benchmark results
@@ -74,9 +74,9 @@ dotnet run -c Release -- --filter *Memory.ImmutableArrayBenchmark*
 
 ### Interpretation
 
-- **The Item-by-Item Loop Catastrophe**: The `ImmutableArrayAdd` method illustrates a severe architectural performance pitfall. Appending 10,000 items sequentially via the `.Add()` extension forces the runtime to re-allocate and duplicate 10,000 separate array instances. This drags execution speed down to **9.49 milliseconds** and generates a massive **200.2 Megabytes** of temporary heap trash.
-- **The Builder Extinction Optimization**: The `ImmutableArrayWithBuilderAdd` track fixes this memory issue completely. By utilizing the dedicated internal staging object (`ImmutableArray.CreateBuilder<T>`), items are compiled inside a single, resizable array. Calling `.ToImmutable()` then locks down that specific array reference. This brings loop insertion speed back down to **27.5 microseconds**—making it **340x faster** than a direct loop while removing 99.9% of the heap pollution.
-- **The Raw Hardware Indexing Victory**: On pure read paths (`ImmutableArrayRead`), the collection runs faster than a standard `List<T>` (~0.66 ns vs ~0.67 ns). Because `ImmutableArray<T>` wraps a raw memory array block with zero object proxy lookups or tracking abstraction logic, it maps index requests to direct memory pointer addresses with absolute maximum hardware speed.
+- **The Item-by-Item Loop Cost**: The `ImmutableArrayAdd` method illustrates a significant performance pitfall. Appending 10,000 items sequentially via the `.Add()` extension forces the runtime to re-allocate and duplicate 10,000 separate array instances. This drags execution speed down to **9.49 milliseconds** and generates a large **200.2 Megabytes** of temporary garbage.
+- **The Builder Optimization**: The `ImmutableArrayWithBuilderAdd` track fixes this memory issue completely. By utilizing the dedicated internal staging object (`ImmutableArray.CreateBuilder<T>`), items are compiled inside a single, resizable array. Calling `.ToImmutable()` then locks down that specific array reference. This brings loop insertion speed back down to **27.5 microseconds**—making it **340x faster** than a direct loop while removing 99.9% of the heap pollution.
+- **The Raw Indexing Result**: On pure read paths (`ImmutableArrayRead`), the collection performs the same as a standard `List<T>` (~0.66 ns vs ~0.67 ns; the difference is within measurement noise). Because `ImmutableArray<T>` wraps a raw memory array block with zero object proxy lookups or tracking abstraction logic, it maps index requests to direct memory pointer addresses with a single array access.
 
 ## Practical optimizations
 - Use builder (ImmutableArray.CreateBuilder) for bulk operations
@@ -93,7 +93,7 @@ dotnet run -c Release -- --filter *Memory.ImmutableArrayBenchmark*
 
 ## When I would avoid it
 - Frequent mutations -> use List<T>
-- Inside short-lived algorithms where datasets are modified instantly before being immediately discarded.
+- Inside short-lived algorithms where datasets are modified immediately before being immediately discarded.
 
 ## Rule of thumb
 

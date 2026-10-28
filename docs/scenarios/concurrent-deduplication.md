@@ -24,7 +24,7 @@ Using HashSet<T> in concurrent scenarios:
 
 Use ConcurrentDictionary<TKey, byte> as a thread-safe set:
 
-`csharp
+```csharp
 using System.Collections.Concurrent;
 
 var processed = new ConcurrentDictionary<int, byte>();
@@ -39,7 +39,7 @@ if (TryProcess(item.Id))
 {
     // process only once
 }
-`
+```
 
 ---
 
@@ -53,9 +53,9 @@ if (TryProcess(item.Id))
 
 ## Why not ConcurrentBag
 
-`csharp
+```csharp
 var bag = new ConcurrentBag<int>();
-`
+```
 
 - allows duplicates
 - no lookup guarantees

@@ -1,11 +1,13 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections.Concurrent;
+using static PracticalDotNetCollections.Benchmarks.Concurrency.BenchmarkThreads;
 
 namespace PracticalDotNetCollections.Benchmarks.Concurrency;
 
 /// <summary>
-/// Benchmarks evaluating <see cref="ConcurrentStack{T}"/> performance against a locked standard <see cref="Stack{T}"/>.
-/// Measures multi-threaded push/pop contention alongside bulk atomic pointer range manipulations.
+/// Benchmarks comparing <see cref="ConcurrentStack{T}"/> against a standard <see cref="Stack{T}"/> protected by a lock,
+/// plus the bulk PushRange/TryPopRange APIs. All variants use dedicated threads and yield when the stack is empty.
+/// Results depend heavily on core count and contention.
 /// </summary>
 [MemoryDiagnoser]
 public class ConcurrentStackBenchmark {
@@ -19,20 +21,22 @@ public class ConcurrentStackBenchmark {
     public int N;
 
     /// <summary>
-    /// Measures raw multi-threaded throughput using individual lock-free node pushes and pops.
+    /// Lock-free ConcurrentStack with single-element Push/TryPop.
     /// </summary>
     [Benchmark]
     public void ConcurrentStackThroughput() {
         var stack = new ConcurrentStack<int>();
         int itemsPerProducer = N / ProducerCount;
-        long totalConsumed = 0;
+        int remaining = itemsPerProducer * ProducerCount;
 
         var consumers = new Task[ConsumerCount];
         for (int i = 0; i < ConsumerCount; i++) {
-            consumers[i] = Task.Run(() => {
-                while (Interlocked.Read(ref totalConsumed) < N) {
+            consumers[i] = Start(() => {
+                while (Volatile.Read(ref remaining) > 0) {
                     if (stack.TryPop(out _)) {
-                        Interlocked.Increment(ref totalConsumed);
+                        Interlocked.Decrement(ref remaining);
+                    } else {
+                        Thread.Yield();
                     }
                 }
             });
@@ -40,7 +44,7 @@ public class ConcurrentStackBenchmark {
 
         var producers = new Task[ProducerCount];
         for (int i = 0; i < ProducerCount; i++) {
-            producers[i] = Task.Run(() => {
+            producers[i] = Start(() => {
                 for (int j = 0; j < itemsPerProducer; j++) {
                     stack.Push(j);
                 }
@@ -52,24 +56,28 @@ public class ConcurrentStackBenchmark {
     }
 
     /// <summary>
-    /// Measures concurrent performance using a standard stack protected by an exclusive global loop lock.
+    /// Standard Stack guarded by a monitor lock.
     /// </summary>
     [Benchmark]
     public void StackWithLockThroughput() {
         var stack = new Stack<int>();
         var locker = new object();
         int itemsPerProducer = N / ProducerCount;
-        long totalConsumed = 0;
+        int remaining = itemsPerProducer * ProducerCount;
 
         var consumers = new Task[ConsumerCount];
         for (int i = 0; i < ConsumerCount; i++) {
-            consumers[i] = Task.Run(() => {
-                while (Interlocked.Read(ref totalConsumed) < N) {
+            consumers[i] = Start(() => {
+                while (Volatile.Read(ref remaining) > 0) {
+                    bool popped;
                     lock (locker) {
-                        if (stack.Count > 0) {
-                            stack.Pop();
-                            Interlocked.Increment(ref totalConsumed);
-                        }
+                        popped = stack.TryPop(out _);
+                    }
+
+                    if (popped) {
+                        Interlocked.Decrement(ref remaining);
+                    } else {
+                        Thread.Yield();
                     }
                 }
             });
@@ -77,7 +85,7 @@ public class ConcurrentStackBenchmark {
 
         var producers = new Task[ProducerCount];
         for (int i = 0; i < ProducerCount; i++) {
-            producers[i] = Task.Run(() => {
+            producers[i] = Start(() => {
                 for (int j = 0; j < itemsPerProducer; j++) {
                     lock (locker) {
                         stack.Push(j);
@@ -91,23 +99,24 @@ public class ConcurrentStackBenchmark {
     }
 
     /// <summary>
-    /// Measures the massive performance benefit of using bulk atomic range pointer updates rather than individual loops.
+    /// ConcurrentStack using PushRange/TryPopRange to move many items per atomic operation.
     /// </summary>
     [Benchmark]
     public void ConcurrentStackBulkRange() {
         var stack = new ConcurrentStack<int>();
         int itemsPerProducer = N / ProducerCount;
-        long totalConsumed = 0;
+        int remaining = itemsPerProducer * ProducerCount;
 
         var consumers = new Task[ConsumerCount];
         for (int i = 0; i < ConsumerCount; i++) {
-            consumers[i] = Task.Run(() => {
+            consumers[i] = Start(() => {
                 var popBuffer = new int[itemsPerProducer];
-                while (Interlocked.Read(ref totalConsumed) < N) {
-                    // Atomically pops multiple elements from the head pointer in a single cycle
+                while (Volatile.Read(ref remaining) > 0) {
                     int popped = stack.TryPopRange(popBuffer);
                     if (popped > 0) {
-                        Interlocked.Add(ref totalConsumed, popped);
+                        Interlocked.Add(ref remaining, -popped);
+                    } else {
+                        Thread.Yield();
                     }
                 }
             });
@@ -115,13 +124,12 @@ public class ConcurrentStackBenchmark {
 
         var producers = new Task[ProducerCount];
         for (int i = 0; i < ProducerCount; i++) {
-            producers[i] = Task.Run(() => {
+            producers[i] = Start(() => {
                 var pushBuffer = new int[itemsPerProducer];
                 for (int j = 0; j < itemsPerProducer; j++) {
                     pushBuffer[j] = j;
                 }
 
-                // Atomically links the entire array segment onto the stack head in a single operation
                 stack.PushRange(pushBuffer);
             });
         }

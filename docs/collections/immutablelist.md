@@ -74,9 +74,9 @@ dotnet run -c Release -- --filter *Memory.ImmutableListBenchmark*
 
 ### Interpretation
 
-- **The Item-Loop Node Avalanche**: Appending 10,000 items item-by-item using `.Add()` (`ImmutableListAdd`) is an exceptional performance pitfall. It takes **2.65 milliseconds** and pollutes the heap with **6.6 Megabytes** of garbage data, generating severe Gen 0 and Gen 1 garbage collection loops. This happens because the internal engine must instantiate and re-balance deep binary tree branches on every element added.
+- **The Item-Loop Node Allocation Cost**: Appending 10,000 items item-by-item using `.Add()` (`ImmutableListAdd`) is a significant performance pitfall. It takes **2.65 milliseconds** and pollutes the heap with **6.6 Megabytes** of garbage data, generating significant Gen 0 and Gen 1 garbage collection loops. This happens because the internal engine must instantiate and re-balance deep binary tree branches on every element added.
 - **The Builder Stabilization Effect**: The `ImmutableListWithBuilderAdd` method balances this construction overhead. Utilizing the companion staging container (`ImmutableList.CreateBuilder<T>`) cuts memory generation down to **480 KB** (a **92.7% memory reduction**) and speeds up processing time by over 2x. Items are held flatly, compiling tree node structures once when `. ToImmutable()` is executed.
-- **The Index Reading Penalty**: On index lookup execution paths (`ImmutableListRead`), the collection is **nearly 100x slower** than a standard `List<T>` (~80.7 ns vs ~0.8 ns). A standard list maps index references to direct hardware array offsets instantly (O(1)). In contrast, `ImmutableList` must step sequentially down through layers of branch nodes to find indices within its internal binary tree layout.
+- **The Index Reading Penalty**: On index lookup execution paths (`ImmutableListRead`), the collection is **nearly 100x slower** than a standard `List<T>` (~80.7 ns vs ~0.8 ns). A standard list maps index references to direct hardware array offsets immediately (O(1)). In contrast, `ImmutableList` must step sequentially down through layers of branch nodes to find indices within its internal binary tree layout.
 
 ## Practical optimizations
 - Use builder (ImmutableList.CreateBuilder) for bulk operations

@@ -27,13 +27,13 @@ Backed internally by a standard `int[]` array. Because a single 32-bit integer h
 Additionally, the `BitArray` class features built-in bitwise methods (`And`, `Or`, `Xor`, `Not`) that modify the collection in-place. In modern .NET, these bulk operations are highly optimized via SIMD (Single Instruction, Multiple Data), allowing the CPU to process up to 32 or 64 flags in a single hardware instruction cycle.
 
 ## Memory characteristics
-- **Extremely compact**: Uses exactly 1 bit per flag (32 flags per 4-byte integer), plus minimal object overhead.
+- **Very compact**: Uses exactly 1 bit per flag (32 flags per 4-byte integer), plus minimal object overhead.
 - **Substantial footprint savings**: Consumes up to 8x less memory than a standard `bool[]` array, since .NET allocates a full 8-bit byte for every single standalone boolean variable.
 - **Slight CPU overhead**: Incurs a minor CPU math cost during individual reads and writes due to the bit-shifting masking math required to find the exact bit.
 
 ## Complexity overview
 
-- **Individual Read/Write Access**: Near-instant, requiring only a simple array index lookup followed by bitwise masking math.
+- **Individual Read/Write Access**: Constant-time, requiring only a simple array index lookup followed by bitwise masking math.
 - **Bulk Bitwise Operations (`And`/`Or`/`Xor`)**: Highly parallelized via hardware-level SIMD optimization.
 
 ## Benchmark results
@@ -81,8 +81,8 @@ dotnet run -c Release -- --filter *BitArrayBenchmark*
 
 The metrics expose three clear performance realities:
 
-1. **Massive Memory Savings:** At a size of 100,000 items, the standard boolean array requires over 100 KB of heap memory, while the BitArray requires only 12.5 KB. This is a massive 87.4% reduction in memory size. This compaction prevents heavy garbage collection pressure. As seen at 100,000 elements, the boolean array triggers multiple rounds of Gen 0, Gen 1, and Gen 2 garbage collection, while the BitArray covers the exact same number of flags without causing any multi-generation garbage collection activity.
-2. **Individual Access Cost:** Modifying or reading independent elements one-by-one is noticeably slower using BitArray. Individual reads take roughly 1.5x longer, and individual writes take up to 4x longer. This happens because finding or altering a specific bit forces the CPU to run bit-shifting and masking math routines on the internal integer structure, whereas a standard boolean array accesses direct byte addresses instantly.
+1. **Memory Savings:** At a size of 100,000 items, the standard boolean array requires over 100 KB of heap memory, while the BitArray requires only 12.5 KB. This is a large 87.4% reduction in memory size. This compaction prevents heavy garbage collection pressure. As seen at 100,000 elements, the boolean array triggers multiple rounds of Gen 0, Gen 1, and Gen 2 garbage collection, while the BitArray covers the exact same number of flags without causing any multi-generation garbage collection activity.
+2. **Individual Access Cost:** Modifying or reading independent elements one-by-one is noticeably slower using BitArray. Individual reads take roughly 1.5x longer, and individual writes take up to 4x longer. This happens because finding or altering a specific bit forces the CPU to run bit-shifting and masking math routines on the internal integer structure, whereas a standard boolean array accesses direct byte addresses.
 3. **Extreme Bulk Operation Speed:** The real value of BitArray is shown in the PermissionValidation test. At 100,000 items, filtering permissions using a standard loop takes 86,149 ns. Using the bulk BitArray method reduces this to just 688 ns—making it over 125 times faster. Instead of checking indices one by one with slow branching logic, the hardware directly merges whole blocks of 32 flags at the exact same time inside CPU registers.
 
 ## Practical optimizations
@@ -101,7 +101,7 @@ The metrics expose three clear performance realities:
 
 ## When I would avoid it
 - When working with small collections of flags (under a few hundred items), where a readable custom `enum` with the `[Flags]` attribute or a simple structure is cleaner.
-- When raw, unhindered individual element write performance is your absolute highest priority.
+- When raw, unhindered individual element write performance is your highest priority.
 
 ## Rule of thumb
 

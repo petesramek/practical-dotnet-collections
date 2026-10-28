@@ -8,10 +8,10 @@ Using struct keys without proper equality implementation can cause boxing.
 
 ## Problem
 
-`csharp
+```csharp
 struct MyKey { public int Id; }
 var dict = new Dictionary<MyKey, string>();
-`
+```
 
 Without IEquatable<MyKey>, lookups may box the struct.
 
@@ -29,7 +29,7 @@ Without IEquatable<MyKey>, lookups may box the struct.
 
 Implement IEquatable<T>:
 
-`csharp
+```csharp
 struct MyKey : IEquatable<MyKey>
 {
     public int Id;
@@ -37,7 +37,7 @@ struct MyKey : IEquatable<MyKey>
     public bool Equals(MyKey other) => Id == other.Id;
     public override int GetHashCode() => Id;
 }
-`
+```
 
 ---
 

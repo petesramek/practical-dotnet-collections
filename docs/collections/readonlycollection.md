@@ -32,8 +32,8 @@ Wraps an existing IList<T> without copying data. All operations delegate to the 
 
 ## Complexity overview
 
-- **Index Lookups**: Near-instant direct reference offset delegation steps.
-- **Collection Wrap Initializations**: Instant constant-time reference assignment (O(1)).
+- **Index Lookups**: Fast direct reference offset delegation steps.
+- **Collection Wrap Initializations**: Constant-time constant-time reference assignment (O(1)).
 
 ## Benchmark results
 
@@ -70,8 +70,8 @@ dotnet run -c Release -- --filter *Iteration.ReadOnlyCollectionBenchmark*
 
 ### Interpretation
 
-- **The Foreach Interface Trap**: Iterating a `ReadOnlyCollection` using an item loop (`IterateReadOnlyCollectionForeach`) is an exceptional execution performance pitfall. At N = 10,000, it takes a brutal **21.9 microseconds**—making it **nearly 5x slower** than the native list loop. Because the wrapper masks the underlying types, the JIT cannot optimize loop paths. It forces .NET to fallback to a generic `IEnumerable<T>` virtual interface method lookup and leaves a **40-Byte** generic enumerator allocation on the heap on every entry run.
-- **The Struct Enumerator Dominance**: The `IterateListForeach` track runs in a mere **4.5 microseconds** with zero heap allocations. When a loop hits a direct list type, the C# compiler uses a specialized, pre-compiled value-type struct enumerator (`List<T>.Enumerator`), which runs inline directly inside CPU registers with absolute maximum hardware speed.
+- **The Foreach Interface Trap**: Iterating a `ReadOnlyCollection` using an item loop (`IterateReadOnlyCollectionForeach`) is a measurable performance pitfall. At N = 10,000, it takes a **21.9 microseconds**—making it **nearly 5x slower** than the native list loop. Because the wrapper masks the underlying types, the JIT cannot optimize loop paths. It forces .NET to fallback to a generic `IEnumerable<T>` virtual interface method lookup and leaves a **40-Byte** generic enumerator allocation on the heap on every entry run.
+- **The Struct Enumerator Advantage**: The `IterateListForeach` track runs in **4.5 microseconds** with zero heap allocations. When a loop hits a direct list type, the C# compiler uses a specialized, pre-compiled value-type struct enumerator (`List<T>.Enumerator`), which runs inline directly inside CPU registers without virtual calls.
 - **The Index Traversal Optimization**: The `IterateReadOnlyCollectionForIndex` method highlights the proper optimization path for wrapped collections. Changing your loop check from a `foreach` statement to an index-bound `for` loop cuts processing delays down to **13.0 microseconds**—speeding up execution by **over 40%** while removing the heap garbage allocation footprint completely. Index access bypasses enumerator state machines, calling internal array offsets through direct reference delegation.
 
 ## Practical optimizations

@@ -16,9 +16,9 @@ Objects larger than ~85,000 bytes are allocated on the Large Object Heap.
 
 ## Example
 
-`csharp
+```csharp
 var list = new List<int>(100000);
-`
+```
 
 This may push the internal array to LOH.
 

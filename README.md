@@ -1,127 +1,140 @@
 # Practical .NET Collections
 
-A practical, performance-focused guide to choosing the right .NET collection based on real behavior, trade-offs, and measured performance.
+A practical, performance-focused guide to choosing the right .NET collection based on behavior, trade-offs, and measured performance.
+
+All benchmark numbers come from [BenchmarkDotNet](https://benchmarkdotnet.org/) runs in [`benchmarks/`](./benchmarks). They depend on hardware, runtime version, and (for concurrency) core count, so treat them as relative indications and re-run them on your own machine. Each page lists the command to do so.
 
 ---
 
 ## How to use this guide
 
-- **Step 1:** Use the **Decision Flow Chart** below to narrow down your architectural constraints.
-- **Step 2:** Use the **Quick Reference Matrix** to confirm the exact data structure choice.
-- **Step 3:** Click the collection names in the matrix or the catalog section to navigate directly to detailed behavior, trade-offs, and benchmarks.
+- **Step 1:** Use the **Decision Flow** below to narrow down your constraints.
+- **Step 2:** Use the **Quick Decision Matrix** to confirm the choice.
+- **Step 3:** Follow the links to the detailed behavior, trade-offs, and benchmarks.
+- Pages under [comparisons](#comparisons), [scenarios](#scenarios), and [advanced topics](#advanced-topics) go deeper on specific questions.
 
 ---
 
 ## Decision Flow
 
-Decisions are evaluated sequentially in this exact order:
-1. **Thread Safety** (Is data shared across multiple threads concurrently?)
-2. **Data Lifetime** (Is data dynamic/mutable, completely static, immutable, or a safe view?)
-3. **Access Pattern** (Are you looking up items by matching keys/values, or navigating sequentially?)
-4. **Ordering Requirements** (Do items need sorting, prioritization, FIFO, or LIFO?)
+Decisions are evaluated in this order:
+1. **Sharing across threads** (concurrent writers, or read-only sharing?)
+2. **Data lifetime** (mutable, built once and never changed, immutable snapshots, or a read-only view?)
+3. **Access pattern** (lookup by key/value, or by order/position?)
+4. **Ordering requirements** (sorted, prioritized, FIFO, LIFO?)
+
+Frozen and immutable collections are safe to share between threads without locks, so they appear under "Data lifetime" even when several threads read them. Read-only *views* are not thread-safe if the underlying collection is still being modified.
 
 ```mermaid
 flowchart TD
-    A[Start] --> B{Thread Safety\nRequired?}
+    A[Start] --> B{Is the data shared\nbetween threads?}
 
-    %% === CONCURRENT CONTEXT ===
-    B -->|Yes| C{Processing Pattern?}
-    C -->|Async Producer / Consumer| C1[Channel]
-    C -->|Blocking Producer / Consumer| E1[BlockingCollection]
-    C -->|Shared Key-Value Storage| E2[ConcurrentDictionary]
+    B -->|"Yes, threads add and remove\nitems concurrently"| C{Processing pattern?}
+    B -->|"Yes, but it is never modified\nafter it is published"| H
+    B -->|No / one thread at a time| H
 
-    %% === MAIN LIFE CYCLE LIFETIME ===
-    B -->|No| H{How will this data change\nover time?}
+    %% === CONCURRENT ===
+    C -->|"Async producer / consumer\n(related type, not a collection)"| C1[Channel]
+    C -->|"Blocking producer / consumer\nwith a size bound"| C2[BlockingCollection]
+    C -->|Unbounded FIFO| C3[ConcurrentQueue]
+    C -->|LIFO| C4[ConcurrentStack]
+    C -->|"Unordered; the same threads\nadd and take items"| C5[ConcurrentBag]
+    C -->|Shared key-value storage| C6[ConcurrentDictionary]
 
-    %% Frozen Stream
-    H -->|Built once at startup\nNever changes, read millions of times| L{How will you look up data?}
-    L -->|By key mapping| M[FrozenDictionary]
-    L -->|By unique values only| N[FrozenSet]
+    %% === LIFETIME ===
+    H{How does the data\nchange over time?}
 
-    %% ReadOnly View Stream
-    H -->|It changes internally, but I want to\nblock consumers from modifying it| R2{How will consumers access it?}
-    R2 -->|By key mapping| R3[ReadOnlyDictionary]
-    R2 -->|By index or list iteration| R4[ReadOnlyCollection]
+    H -->|"Built once, never changes,\nread very often"| L{How will you look up data?}
+    L -->|By key| M[FrozenDictionary]
+    L -->|Membership only| N[FrozenSet]
 
-    %% Immutable Structural Stream
-    H -->|It never changes, but I need to make\nnew updated copies safely| I{What is the primary action?}
-    I -->|Mostly reading, rarely making a copy| J1[ImmutableArray]
-    I -->|Frequently adding/removing items to make new copies| J2[ImmutableList]
-    I -->|Looking up values by a key| J3[ImmutableDictionary]
-    I -->|Tracking unique items| J4[ImmutableHashSet]
+    H -->|"Never changes in place, but I need\nupdated copies (snapshots)"| I{Primary action?}
+    I -->|"Mostly reading,\nrarely creating a copy"| J1[ImmutableArray]
+    I -->|"Frequently creating\nmodified copies"| J2[ImmutableList]
+    I -->|Key lookups| J3[ImmutableDictionary]
+    I -->|Unique items| J4[ImmutableHashSet]
 
-    %% Standard Mutable Stream
-    H -->|Standard collection\nFrequent Add, Remove, and Clear| O{How do you want to find\nitems in the collection?}
-    
-    %% Lookups Sub-branch
-    O -->|Look up by matching a Key or value| P{Do you need the items\nto be sorted?}
-    P -->|No, just fast lookup| P1{Do you have a Key?}
-    P1 -->|Yes, map Key to Value| T2[Dictionary]
-    P1 -->|No, just check if Value exists| Q[HashSet]
-    
-    P -->|Yes, sort by Key| P2{Is the collection large\nwith frequent additions?}
-    P2 -->|Yes, heavy additions| S[SortedDictionary]
-    P2 -->|No, mostly setup once / low memory| S2[SortedList]
+    H -->|"Mutable underneath, but consumers\nmust not modify it (view)"| R{How do consumers access it?}
+    R -->|By key| R1[ReadOnlyDictionary]
+    R -->|By index / iteration| R2[ReadOnlyCollection]
 
-    %% Sequential Sub-branch
-    O -->|Look up by order or position| U{What is the order pattern?}
-    U -->|First-In, First-Out queue| V[Queue]
-    U -->|Last-In, First-Out stack| W[Stack]
-    U -->|By custom priority ranking| X[PriorityQueue]
-    U -->|Keep values sorted automatically| Y[SortedSet]
-    U -->|Direct index lookup like items| Z[List]
+    H -->|"Mutable: frequent\nAdd / Remove / Clear"| O{What do you need?}
+
+    %% === MUTABLE ===
+    O -->|Look up by key or value| P{Sorted?}
+    P -->|"No"| P1{Do you have a key?}
+    P1 -->|"Yes, map key to value"| T2[Dictionary]
+    P1 -->|"No, only check existence"| Q[HashSet]
+    P -->|"Yes, sorted by key"| P2{Workload?}
+    P2 -->|"Frequent inserts and removals"| S[SortedDictionary]
+    P2 -->|"Built once / mostly read, memory-sensitive"| S2[SortedList]
+    P -->|"Yes, unique values only"| Y[SortedSet]
+
+    O -->|Order or position matters| U{Order pattern?}
+    U -->|"Index access, append"| Z[List]
+    U -->|"Frequent insert/remove in the middle\nwith a node reference"| LL[LinkedList]
+    U -->|FIFO| V[Queue]
+    U -->|LIFO| W[Stack]
+    U -->|"Highest/lowest priority first"| X[PriorityQueue]
+
+    O -->|"Large set of on/off flags"| BA[BitArray]
 ```
 
 ---
 
 ## Quick Decision Matrix
 
-| Context / Category | Requirement & Behavior | Recommended Collection |
+| Category | Requirement & behavior | Recommended collection |
 | :--- | :--- | :--- |
-| **Standard Mutable** | Dynamic list of items with direct index access (`[i]`) | [`List<T>`](./docs/collections/list.md) |
-| **Standard Mutable** | High-speed key-based data mapping | [`Dictionary<TKey, TValue>`](./docs/collections/dictionary.md) |
-| **Standard Mutable** | High-speed uniqueness and existence checks | [`HashSet<T>`](./docs/collections/hashset.md) |
-| **Standard Mutable** | Process sequential items in arrival order (FIFO) | [`Queue<T>`](./docs/collections/queue.md) |
-| **Standard Mutable** | Process sequential items in most-recent order (LIFO) | [`Stack<T>`](./docs/collections/stack.md) |
-| **Standard Mutable** | Process sequential items ordered by a priority ranking | [`PriorityQueue<TElement, TPriority>`](./docs/collections/priorityqueue.md) |
-| **Standard Mutable** | Kept sorted by key; optimized for frequent additions | [`SortedDictionary<TKey, TValue>`](./docs/collections/sorteddictionary.md) |
-| **Standard Mutable** | Kept sorted by key; optimized for frequent read lookups | [`SortedList<TKey, TValue>`](./docs/collections/sortedlist.md) |
-| **Standard Mutable** | Kept sorted by unique value elements | [`SortedSet<T>`](./docs/collections/sortedset.md) |
-| **Concurrent** | Multi-threaded thread-safe key-value data storage | [`ConcurrentDictionary<TKey, TValue>`](./docs/collections/concurrentdictionary.md) |
-| **Concurrent** | High-performance async producer–consumer messaging | [`Channel<T>`](./docs/collections/channel.md) |
-| **Concurrent** | Multi-threaded thread-safe blocking pipeline messaging | [`BlockingCollection<T>`](./docs/collections/blockingcollection.md) |
-| **Immutable** | Data never changes; optimized for maximum read performance | [`ImmutableArray<T>`](./docs/collections/immutablearray.md) |
-| **Immutable** | Data never changes; optimized for frequent structural updates | [`ImmutableList<T>`](./docs/collections/immutablelist.md) |
-| **Immutable** | Thread-safe, unchangeable key-value data storage | [`ImmutableDictionary<TKey, TValue>`](./docs/collections/immutabledictionary.md) |
-| **Immutable** | Thread-safe, unchangeable set of unique elements | [`ImmutableHashSet<T>`](./docs/collections/immutablehashset.md) |
-| **Static / Frozen** | Created once at app startup; optimized key lookups | [`FrozenDictionary<TKey, TValue>`](./docs/collections/frozendictionary.md) |
-| **Static / Frozen** | Created once at app startup; optimized unique sets | [`FrozenSet<T>`](./docs/collections/frozenset.md) |
-| **Read-Only View** | Safe, unmodifiable view tracking a dynamic underlying list | [`ReadOnlyCollection<T>`](./docs/collections/readonlycollection.md) |
-| **Read-Only View** | Safe, unmodifiable view tracking dynamic key-value data | [`ReadOnlyDictionary<TKey, TValue>`](./docs/collections/readonlydictionary.md) |
+| **Mutable** | Dynamic list with index access | [`List<T>`](./docs/collections/list.md) |
+| **Mutable** | Frequent insert/remove at known nodes | [`LinkedList<T>`](./docs/collections/linkedlist.md) |
+| **Mutable** | Key-to-value mapping | [`Dictionary<TKey, TValue>`](./docs/collections/dictionary.md) |
+| **Mutable** | Uniqueness and existence checks | [`HashSet<T>`](./docs/collections/hashset.md) |
+| **Mutable** | FIFO processing | [`Queue<T>`](./docs/collections/queue.md) |
+| **Mutable** | LIFO processing | [`Stack<T>`](./docs/collections/stack.md) |
+| **Mutable** | Processing ordered by priority | [`PriorityQueue<TElement, TPriority>`](./docs/collections/priorityqueue.md) |
+| **Mutable** | Compact storage of many boolean flags | [`BitArray`](./docs/collections/bitarray.md) |
+| **Sorted** | Sorted by key; frequent inserts | [`SortedDictionary<TKey, TValue>`](./docs/collections/sorteddictionary.md) |
+| **Sorted** | Sorted by key; built once, mostly read | [`SortedList<TKey, TValue>`](./docs/collections/sortedlist.md) |
+| **Sorted** | Sorted unique values | [`SortedSet<T>`](./docs/collections/sortedset.md) |
+| **Concurrent** | Shared key-value storage | [`ConcurrentDictionary<TKey, TValue>`](./docs/collections/concurrentdictionary.md) |
+| **Concurrent** | Unbounded thread-safe FIFO | [`ConcurrentQueue<T>`](./docs/collections/concurrentqueue.md) |
+| **Concurrent** | Unbounded thread-safe LIFO | [`ConcurrentStack<T>`](./docs/collections/concurrentstack.md) |
+| **Concurrent** | Unordered pool where threads mostly take back what they added | [`ConcurrentBag<T>`](./docs/collections/concurrentbag.md) |
+| **Concurrent** | Blocking, optionally bounded producer-consumer pipeline | [`BlockingCollection<T>`](./docs/collections/blockingcollection.md) |
+| **Immutable** | Snapshot optimized for reads | [`ImmutableArray<T>`](./docs/collections/immutablearray.md) |
+| **Immutable** | Snapshot optimized for frequent modified copies | [`ImmutableList<T>`](./docs/collections/immutablelist.md) |
+| **Immutable** | Snapshot key-value map | [`ImmutableDictionary<TKey, TValue>`](./docs/collections/immutabledictionary.md) |
+| **Immutable** | Snapshot set of unique elements | [`ImmutableHashSet<T>`](./docs/collections/immutablehashset.md) |
+| **Frozen** | Created once at startup; fastest key lookups | [`FrozenDictionary<TKey, TValue>`](./docs/collections/frozendictionary.md) |
+| **Frozen** | Created once at startup; fastest membership checks | [`FrozenSet<T>`](./docs/collections/frozenset.md) |
+| **Read-only view** | Unmodifiable view over a list that may still change | [`ReadOnlyCollection<T>`](./docs/collections/readonlycollection.md) |
+| **Read-only view** | Unmodifiable view over a dictionary that may still change | [`ReadOnlyDictionary<TKey, TValue>`](./docs/collections/readonlydictionary.md) |
+| **Related type** | Async producer-consumer (not a collection) | [`Channel<T>`](./docs/related-types/channel.md) |
+
+Thread safety at a glance: concurrent collections, immutable collections, and frozen collections can be shared across threads (concurrent ones for writes too). `List<T>`, `Dictionary<TKey, TValue>` and the other standard mutable collections, and read-only views over them, are not safe for concurrent modification.
 
 ---
 
 ## Common Mistakes
 
-- **Using `List<T>.Contains` inside loops:** Forces sequential scans from index 0 to N on every single check. Convert the collection to a `HashSet<T>` to gain instant lookups.
-- **Modifying `ImmutableArray<T>` in sequential loops:** Calling `.Add()` allocates a brand-new underlying array copy on every single iteration. Use `ImmutableArray.CreateBuilder<T>()` to populate data in memory before freezing it.
-- **Leaving collection capacities unassigned:** Instantiating collections without a size hint triggers multiple array reallocations and memory copies as elements grow. Always pass an estimated size parameter to constructors like `new List<T>(capacity)`.
-- **Using structural keys in dictionaries without equality contract overrides:** Passing custom `struct` configurations as dictionary keys without explicitly implementing `IEquatable<T>` and overriding `GetHashCode()` triggers heavy CPU boxing overhead and runtime reflection lookups on every access.
-- **Double-looking up dictionary keys during updates:** Checking `ContainsKey()` immediately followed by an indexer update executes two separate hash table lookups. Use `TryGetValue()` or `CollectionsMarshal.GetValueRefOrAddDefault` to perform the entire operation in a single step.
-- **Iterating `Dictionary.Keys` or `Dictionary.Values` to look up the matching pair:** Scanning one of the side-collections sequentially destroys the purpose of a map. Use `KeyValuePair<TKey, TValue>` iteration directly via `foreach (var (key, value) in dict)` to access keys and values together without extra lookups or array allocations.
-- **Passing an active mutable collection to a `ReadOnlyCollection<T>` wrapper while continuing to modify the source:** Modifying the original `List<T>` after creating the wrapper will instantly change the wrapper's content. If you require a true snapshot that cannot change from underneath you, use `.ToFrozenSet()`, `.ToFrozenDictionary()`, or an immutable equivalent.
-- **Using `ConcurrentBag<T>` as a generic substitute for `ConcurrentQueue<T>` in dedicated producer-consumer tracks:** When distinct threads only add items and completely different threads only pull them out, `ConcurrentBag<T>` forces constant cross-thread work-stealing synchronization locks. Use `ConcurrentQueue<T>` for separated workloads.
-- **Overusing `SortedDictionary<TKey, TValue>` when updates are rare:** `SortedDictionary` uses a binary search tree, which incurs heavy object allocation overhead for its nodes. If your collection is populated once or twice and then primarily read, `SortedList<TKey, TValue>` is vastly superior because it stores elements in tightly packed arrays, saving substantial memory and improving CPU cache locality.
-- **Enqueuing large objects into `PriorityQueue` with a complex, unoptimized priority type:** When sorting elements dynamically, `PriorityQueue` executes structural comparison swaps. If your priority parameter is a large mutable custom struct rather than a simple primitive (like an `int` or a `long`), .NET is forced to copy that value type across memory boundaries on every swap, driving up CPU cycles during updates.
-- **Using `ConcurrentDictionary.GetOrAdd` with a lambda that allocates closure memory:** If your factory lambda references variables defined outside of its scope, the compiler secretly instantiates a hidden closure object on the heap on every single execution. Use the performance-oriented overload `GetOrAdd(key, (k, state) => factory(k, state), factoryState)` to pass external variables safely into the factory state context without allocations.
-- **Treating `ConcurrentDictionary.Count` as a cheap property check:** Unlike a standard collection where checking the count reads a pre-calculated field, calling `.Count` on a `ConcurrentDictionary` forces the runtime to acquire locks sequentially across every single internal bucket partition to sum up the items safely. For presence checks in multi-threaded tracks, try iterating with `.IsEmpty` instead.
-- **Failing to use `PriorityQueue.DequeueEnqueue` for rapid replacement loops:** When you need to pop the top priority item out and immediately push a replacement element in, calling `.Dequeue()` followed by `.Enqueue()` forces the internal binary heap structure to re-balance itself twice. Using the single combined `.DequeueEnqueue()` method executes both actions in a single optimized pass, cutting the structural sorting work in half.
-- **Instantiating a `Queue<T>` or `Stack<T>` when you frequently need to check middle elements:** Queues and stacks are array-backed structures strictly optimized for entry-point and exit-point manipulations. If you regularly look up items in the middle of the chain using loops or linear scans, you lose the layout benefit. Use a standard `List<T>` which naturally supports fast direct indexing.
-- **Using `List<bool>` or `bool[]` arrays for massive flags or binary toggle structures:** In .NET, a `bool` type actually consumes a full byte (8 bits) of memory storage. If you are holding millions of binary status toggles, a standard list wastes massive amounts of RAM. Switching to a `BitArray` compacts your data tightly by storing up to 32 independent boolean flags inside a single 32-bit integer block.
-- **Using `ImmutableList<T>` when you only need a snapshot of an array:** If you just want to freeze an existing array or list so it cannot be mutated, calling `.ToImmutableList()` creates an expensive, multi-node binary tree structure in memory. If you only plan to read from the snapshot, use `.ToImmutableArray()` instead, which simply wraps a raw array with zero tree overhead.
-- **Holding references to small sub-arrays using `Array.Copy` or standard slicing instead of `ReadOnlySpan<T>`:** When you slice or extract a subset of elements from a large array into a new collection, .NET allocates a brand-new array on the heap and copies the values over. For read-only processing on a window of data, use `ReadOnlySpan<T>` or `Memory<T>` to pass a zero-allocation virtual view pointing directly to the original memory layout.
-- **Assuming `ReadOnlyCollection<T>` protects the elements inside it from being changed:** A read-only wrapper only stops a consumer from adding, removing, or replacing items in the list structure itself. If the collection holds mutable class objects, external code can still freely modify the properties of the individual objects inside the list. To achieve absolute safety for reference types, the objects themselves must be designed as immutable.
-- **Casting a collection to `IEnumerable<T>` to pass it to a method, assuming it prevents modification:** Casting a `List<T>` or a `Dictionary<TKey, TValue>` down to a base interface like `IEnumerable<T>` hides the mutation methods from the compiler, but it does not change the runtime object. A malicious or careless consumer can easily cast the interface back to `IList<T>` or `List<T>` at runtime and completely modify your private collection state.
+- **Using `List<T>.Contains` inside loops:** Each call is a linear scan. Convert the data to a `HashSet<T>` for repeated membership checks.
+- **Calling `Add` on `ImmutableArray<T>` in a loop:** Every call copies the whole array. Use `ImmutableArray.CreateBuilder<T>()` and call `ToImmutable()` once.
+- **Not providing a capacity hint:** Growing a `List<T>` or `Dictionary<TKey, TValue>` incrementally reallocates and copies. Pass the expected size when it is known.
+- **Using struct keys without `IEquatable<T>`:** The default comparer boxes the key on equality checks. Implement `IEquatable<T>` and override `GetHashCode()`. See [struct dictionary keys](./docs/advanced/struct-dictionary-keys.md).
+- **Looking up the same dictionary key several times when updating:** `ContainsKey` + get + set is up to four lookups. `TryGetValue` + set is two; `CollectionsMarshal.GetValueRefOrNullRef` (existing keys) or `GetValueRefOrAddDefault` (add or update) is one.
+- **Iterating `Dictionary.Keys` and then looking up each value:** Enumerate the `KeyValuePair` entries directly with `foreach (var (key, value) in dict)`.
+- **Wrapping a mutable collection in `ReadOnlyCollection<T>` and expecting a snapshot:** The wrapper reflects later changes to the source. For a snapshot use `ToImmutableArray()`, `ToFrozenSet()`, `ToFrozenDictionary()` or copy the data.
+- **Assuming `ReadOnlyCollection<T>` protects the elements:** It only blocks adding, removing and replacing items. Mutable element objects can still be changed.
+- **Casting to `IEnumerable<T>` to "protect" a collection:** Callers can cast back to `List<T>`. Return a read-only wrapper or an immutable copy instead.
+- **Using `ConcurrentBag<T>` for separate producers and consumers:** The bag is optimized for threads that take back what they added; otherwise it falls back to stealing from other threads' lists. Use `ConcurrentQueue<T>` (or `ConcurrentStack<T>`) instead.
+- **Using `SortedDictionary` when data is built once and then read:** `SortedList` stores entries in arrays, which uses less memory and iterates faster, but random inserts cost O(n).
+- **Allocating closures in `ConcurrentDictionary.GetOrAdd`:** Use the overload that accepts a factory argument, for example `GetOrAdd(key, static (k, arg) => ..., arg)`.
+- **Reading `ConcurrentDictionary.Count` on hot paths:** `Count` takes all internal locks. Use `IsEmpty` for emptiness checks; it first scans buckets without taking locks.
+- **Using `Dequeue()` then `Enqueue()` on a `PriorityQueue` to replace the top element:** `EnqueueDequeue` and `DequeueEnqueue` do the same work with one sift operation.
+- **Using `Queue<T>` or `Stack<T>` when you need to access middle elements:** Use `List<T>` instead.
+- **Using `bool[]` or `List<bool>` for very large numbers of flags:** Each `bool` takes a byte. `BitArray` uses one bit per flag, at the cost of slower per-element access.
+- **Using `ImmutableList<T>` for a read-mostly snapshot:** It is a tree; index reads are much slower than on an array. Use `ImmutableArray<T>` unless you need cheap modified copies.
 
 ---
 
@@ -129,28 +142,66 @@ flowchart TD
 
 ### Core Mutable
 - [List](./docs/collections/list.md) — Array-backed indexable dynamic list.
-- [LinkedList](./docs/collections/linkedlist.md) — Node-backed dynamic sequence for fast center updates.
-- [Queue](./docs/collections/queue.md) — First-In, First-Out sequence behavior.
-- [Stack](./docs/collections/stack.md) — Last-In, First-Out sequence behavior.
-- [Dictionary](./docs/collections/dictionary.md) — High-speed unique key-to-value map storage.
-- [HashSet](./docs/collections/hashset.md) — High-speed membership validation collection.
+- [LinkedList](./docs/collections/linkedlist.md) — Node-based sequence with O(1) insert/remove at a known node.
+- [Queue](./docs/collections/queue.md) — First-in, first-out sequence.
+- [Stack](./docs/collections/stack.md) — Last-in, first-out sequence.
+- [PriorityQueue](./docs/collections/priorityqueue.md) — Dequeues the element with the lowest priority value first.
+- [Dictionary](./docs/collections/dictionary.md) — Unique key-to-value hash map.
+- [HashSet](./docs/collections/hashset.md) — Hash-based set for membership checks.
+- [BitArray](./docs/collections/bitarray.md) — Compact bit-per-flag storage.
 
-### Automatically Sorted
-- [SortedList](./docs/collections/sortedlist.md) — Fast-reading, memory-efficient sorted key-value array.
-- [SortedDictionary](./docs/collections/sorteddictionary.md) — Fast-updating binary tree sorted key-value map.
-- [SortedSet](./docs/collections/sortedset.md) — Automatically sorted unique values element tree.
+### Sorted
+- [SortedList](./docs/collections/sortedlist.md) — Sorted key-value arrays; compact, fast reads.
+- [SortedDictionary](./docs/collections/sorteddictionary.md) — Sorted key-value tree; cheaper random inserts.
+- [SortedSet](./docs/collections/sortedset.md) — Sorted set of unique values.
 
-### Concurrency & Pipelines
-- [Channel](./docs/collections/channel.md) — High-performance async producer–consumer messaging streams.
-- [BlockingCollection](./docs/collections/blockingcollection.md) — Multi-threaded thread-safe blocking pipeline messaging boundary.
-- [ConcurrentDictionary](./docs/collections/concurrentdictionary.md) — Multi-threaded shared state caching and unique map storage.
+### Concurrent
+- [ConcurrentDictionary](./docs/collections/concurrentdictionary.md) — Shared key-value storage.
+- [ConcurrentQueue](./docs/collections/concurrentqueue.md) — Thread-safe FIFO queue.
+- [ConcurrentStack](./docs/collections/concurrentstack.md) — Thread-safe LIFO stack.
+- [ConcurrentBag](./docs/collections/concurrentbag.md) — Thread-safe unordered bag with thread-local storage.
+- [BlockingCollection](./docs/collections/blockingcollection.md) — Blocking, optionally bounded producer-consumer wrapper.
 
-### Static Data & Memory
-- [FrozenDictionary](./docs/collections/frozendictionary.md) — App configuration lookup map created once at application startup.
-- [FrozenSet](./docs/collections/frozenset.md) — Fixed membership verification pool optimized for maximum read performance.
-- [ImmutableArray](./docs/collections/immutablearray.md) — Thread-safe, unchangeable array layout optimized for raw indexing lookups.
-- [ImmutableList](./docs/collections/immutablelist.md) — Functional code sequence snapshots optimized for frequent structural updates.
-- [ImmutableDictionary](./docs/collections/immutabledictionary.md) — Thread-safe, unchangeable key-value data storage.
-- [ImmutableHashSet](./docs/collections/immutablehashset.md) — Thread-safe, unchangeable set of unique elements.
-- [ReadOnlyCollection](./docs/collections/readonlycollection.md) — Defensive shielding proxy view tracking a dynamic underlying list.
-- [ReadOnlyDictionary](./docs/collections/readonlydictionary.md) — Defensive shielding proxy view tracking dynamic key-value data.
+### Immutable
+- [ImmutableArray](./docs/collections/immutablearray.md) — Array snapshot optimized for reads.
+- [ImmutableList](./docs/collections/immutablelist.md) — Tree-based list with cheap modified copies.
+- [ImmutableDictionary](./docs/collections/immutabledictionary.md) — Immutable key-value map.
+- [ImmutableHashSet](./docs/collections/immutablehashset.md) — Immutable set of unique elements.
+
+### Frozen
+- [FrozenDictionary](./docs/collections/frozendictionary.md) — Read-only map optimized for lookups, built once.
+- [FrozenSet](./docs/collections/frozenset.md) — Read-only set optimized for membership checks, built once.
+
+### Read-only Views
+These wrap an existing collection and do not copy it.
+- [ReadOnlyCollection](./docs/collections/readonlycollection.md) — Read-only view over a list.
+- [ReadOnlyDictionary](./docs/collections/readonlydictionary.md) — Read-only view over a dictionary.
+
+### Related Types
+Useful alongside collections, but not collections themselves.
+- [Channel](./docs/related-types/channel.md) — Async producer-consumer primitive (`System.Threading.Channels`).
+
+---
+
+## Comparisons
+- [List vs LinkedList](./docs/comparisons/list-vs-linkedlist.md)
+- [List: default vs preallocated capacity](./docs/comparisons/list-default-vs-capacity.md)
+- [HashSet vs List lookup](./docs/comparisons/hashset-vs-list-lookup.md)
+- [HashSet vs FrozenSet](./docs/comparisons/hashset-vs-frozenset.md)
+- [Dictionary vs FrozenDictionary](./docs/comparisons/dictionary-vs-frozendictionary.md)
+- [Dictionary vs SortedDictionary](./docs/comparisons/dictionary-vs-sorteddictionary.md)
+- [SortedDictionary vs SortedList](./docs/comparisons/sorteddictionary-vs-sortedlist.md)
+- [ImmutableArray vs ImmutableList](./docs/comparisons/immutablearray-vs-immutablelist.md)
+- [Channel vs BlockingCollection](./docs/comparisons/channel-vs-blockingcollection.md)
+
+## Scenarios
+- [Async pipeline](./docs/scenarios/async-pipeline.md)
+- [Concurrent deduplication](./docs/scenarios/concurrent-deduplication.md)
+- [Configuration caching](./docs/scenarios/configuration-caching.md)
+- [Priority processing](./docs/scenarios/priority-processing.md)
+- [Sliding window buffer](./docs/scenarios/sliding-window-buffer.md)
+- [Undo / redo](./docs/scenarios/undo-redo.md)
+
+## Advanced Topics
+- [Large Object Heap](./docs/advanced/large-object-heap.md)
+- [Struct dictionary keys](./docs/advanced/struct-dictionary-keys.md)

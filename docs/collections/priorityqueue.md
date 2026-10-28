@@ -36,7 +36,7 @@ Binary heap stored in array.
 
 - **Enqueue Mutations**: Logarithmic node sorting pointer shifts.
 - **Dequeue Extractions**: Logarithmic root-node balancing adjustments.
-- **Peek Checks**: Instant constant-time boundary view.
+- **Peek Checks**: Constant-time constant-time boundary view.
 
 ## Benchmark results
 
@@ -71,7 +71,7 @@ dotnet run -c Release -- --filter *Add.PriorityQueueBenchmark*
 
 ### Interpretation
 
-- **The List Sorting Catastrophe**: Maintaining an actively sorted tracking map inside a standard list using binary search lookups and mid-array insertions (`ListStreamingSort`) hits a severe performance wall under scale. At N = 10,000, it takes a brutal **4.78 milliseconds**—making it **nearly 10x slower** than the priority queue. While searching is fast, forcing mid-array element shifting loops on every single insertion destroys application throughput.
+- **The List Sorting Cost**: Maintaining an actively sorted tracking map inside a standard list using binary search lookups and mid-array insertions (`ListStreamingSort`) hits a significant performance wall under scale. At N = 10,000, it takes a **4.78 milliseconds**—making it **nearly 10x slower** than the priority queue. While searching is fast, forcing mid-array element shifting loops on every single insertion destroys application throughput.
 - **The Heap Traversal Advantage**: The `PriorityQueueThroughput` method breezes through the exact same 10,000 element triage workload in just **567 microseconds**. Because it manages relationships using a compact min-heap tree structure rather than sorting the full array on every pass, it moves elements to their relative sorted slots with minimal work. However, the empty initialization forces multiple array doublings, triggering Gen 1 and Gen 2 garbage collection cycles.
 - **The Pre-Sized Payload Optimization**: The `PreSizedPriorityQueueThroughput` track resolves the array expansion tax completely. Specifying the target limit upfront in the constructor (`new PriorityQueue<T, P>(N)`) reduces total allocations down to **78.2 KB** (a **69.5% memory reduction**) and cuts execution time down to 509 us while completely bypassing Gen 1/Gen 2 multi-generation garbage collection pressure.
 
@@ -87,7 +87,7 @@ dotnet run -c Release -- --filter *Add.PriorityQueueBenchmark*
 ## When I would choose it
 - Need priority-based processing
 - When implementing automated alert systems, rate limit engines, or background process triages where items arrive out-of-order but must exit strictly by numerical urgency constraints.
-- When pathfinding algorithms or scheduling state machines require instant extraction of the lowest or highest weighted node.
+- When pathfinding algorithms or scheduling state machines require fast extraction of the lowest or highest weighted node.
 
 ## When I would avoid it
 - Simple ordering -> use sorting

@@ -66,36 +66,36 @@ When should you use a tree-based sorted map vs a compact array-based sorted map?
 
 Using SortedList for dynamic workloads:
 
-`csharp
+```csharp
 var list = new SortedList<int, string>();
 
 foreach (var item in incoming)
 {
     list.Add(item.Key, item.Value); // shifts arrays frequently
 }
-`
+```
 
 This triggers repeated large memory moves.
 
 Better:
 
-`csharp
+```csharp
 var dict = new SortedDictionary<int, string>();
 
 foreach (var item in incoming)
 {
     dict.Add(item.Key, item.Value);
 }
-`
+```
 
 Or, if data is known upfront and sortable:
 
-`csharp
+```csharp
 var items = incoming.OrderBy(x => x.Key).ToList();
 var list = new SortedList<int, string>(items.Count);
 foreach (var i in items)
     list.Add(i.Key, i.Value);
-`
+```
 
 ---
 

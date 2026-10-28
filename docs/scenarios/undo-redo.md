@@ -19,7 +19,7 @@ You need:
 
 Use two stacks:
 
-`csharp
+```csharp
 var undoStack = new Stack<string>();
 var redoStack = new Stack<string>();
 
@@ -46,7 +46,7 @@ string Redo()
     undoStack.Push(action);
     return action;
 }
-`
+```
 
 ---
 

@@ -70,8 +70,8 @@ dotnet run -c Release -- --filter *Add.SortedListBenchmark*
 
 ### Interpretation
 
-- **The Array Shifting Wall**: For random insertions (`SortedListRandomAdd`), scaling to N = 10,000 exposes a massive performance barrier. The method takes **5.23 milliseconds**, making it **over 3.2x slower** than a sorted dictionary. Because `SortedList` uses primitive internal arrays, inserting non-sequential keys forces the CPU to copy and shift elements down the array block on every single loop pass.
-- **The Read-Path Binary Victory**: On lookup execution hot paths (`SortedListLookup`), the array layout demonstrates its structural advantage at scale. At N = 10,000, it processes queries in **53.1 ns** compared to the tree's **63.2 ns**. Bypassing deep tree pointer dereferences allows the processor to isolate data inside flat cache lines using direct binary searches.
+- **The Array Shifting Cost**: For random insertions (`SortedListRandomAdd`), scaling to N = 10,000 shows a large performance barrier. The method takes **5.23 milliseconds**, making it **over 3.2x slower** than a sorted dictionary. Because `SortedList` uses primitive internal arrays, inserting non-sequential keys forces the CPU to copy and shift elements down the array block on every single loop pass.
+- **The Read-Path Result**: On lookup execution hot paths (`SortedListLookup`), the array layout demonstrates its structural advantage at scale. At N = 10,000, it processes queries in **53.1 ns** compared to the tree's **63.2 ns**. Bypassing deep tree pointer dereferences allows the processor to isolate data inside flat cache lines using direct binary searches.
 - **The Allocation Compaction Profile**: At N = 10,000, `SortedList` utilizes nearly **half the allocation footprint** of a sorted dictionary (~262 KB vs ~480 KB). It packs parameters tightly into flat primitive buffers instead of populating individual heap nodes.
 
 ## Practical optimizations
@@ -90,7 +90,7 @@ dotnet run -c Release -- --filter *Add.SortedListBenchmark*
 
 ## When I would avoid it
 - Frequent inserts/removes -> use SortedDictionary
-- On high-frequency execution tracks where rapid, near-instant lookup execution speed is your primary performance metric. Use standard `Dictionary<TKey, TValue>`.
+- On high-frequency execution tracks where rapid, near-fast lookup execution speed is your primary performance metric. Use standard `Dictionary<TKey, TValue>`.
 
 ## Rule of thumb
 

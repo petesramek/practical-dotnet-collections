@@ -19,7 +19,7 @@ Using blocking primitives in modern services (ASP.NET, workers):
 
 Use Channel<T> to build an async producer-consumer pipeline:
 
-`csharp
+```csharp
 using System.Threading.Channels;
 
 var channel = Channel.CreateBounded<int>(new BoundedChannelOptions(100)
@@ -42,7 +42,7 @@ await foreach (var item in channel.Reader.ReadAllAsync())
 {
     // process item
 }
-`
+```
 
 ---
 
@@ -58,9 +58,9 @@ await foreach (var item in channel.Reader.ReadAllAsync())
 
 Use bounded channels to avoid memory growth:
 
-`csharp
+```csharp
 var channel = Channel.CreateBounded<int>(capacity: 1000);
-`
+```
 
 - Producers wait when full
 - System stabilizes under load

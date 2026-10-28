@@ -1,9 +1,11 @@
 using BenchmarkDotNet.Attributes;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace PracticalDotNetCollections.Benchmarks.Lookup;
 
 /// <summary>
-/// Struct without equality overrides used to demonstrate boxing and reflection overhead.
+/// Struct without equality overrides used to demonstrate boxing overhead.
 /// </summary>
 public struct UnoptimizedKey {
     public int Id;
@@ -24,7 +26,7 @@ public struct OptimizedKey : IEquatable<OptimizedKey> {
 
 /// <summary>
 /// Benchmarks evaluating <see cref="Dictionary{TKey, TValue}"/> performance footprints.
-/// Examines lookup scaling, key lookups versus lists, double-lookup traps, and struct key boxing overhead.
+/// Examines lookup scaling, key lookups versus lists, multi-lookup update patterns, and struct key boxing overhead.
 /// </summary>
 [MemoryDiagnoser]
 public class DictionaryBenchmark {
@@ -84,10 +86,10 @@ public class DictionaryBenchmark {
     }
 
     /// <summary>
-    /// Demonstrates the common mistake: calling ContainsKey before accessing an indexer, forcing two hash table searches.
+    /// ContainsKey, indexer get, indexer set: three hash lookups per update (a fourth is the final read of the result).
     /// </summary>
     [Benchmark]
-    public int DoubleLookupUpdate() {
+    public int FourLookupUpdate() {
         int key = _searchKeys[_searchIndex++ % (uint)_searchKeys.Length];
         if (_dictionary.ContainsKey(key)) {
             _dictionary[key] = _dictionary[key] + 1;
@@ -96,19 +98,35 @@ public class DictionaryBenchmark {
     }
 
     /// <summary>
-    /// Demonstrates the optimization fix: using TryGetValue to extract and update an item in a single pass.
+    /// TryGetValue followed by an indexer set: two hash lookups per update.
     /// </summary>
     [Benchmark]
-    public int SingleLookupTryGetValueUpdate() {
+    public int TwoLookupTryGetValueUpdate() {
         int key = _searchKeys[_searchIndex++ % (uint)_searchKeys.Length];
-        if (_dictionary.TryGetValue(key, out int value)) {
-            _dictionary[key] = value + 1;
+        int value = 0;
+        if (_dictionary.TryGetValue(key, out value)) {
+            value++;
+            _dictionary[key] = value;
         }
         return value;
     }
 
     /// <summary>
-    /// Highlights lookups using a raw struct key, triggering heavy internal CPU boxing and runtime reflection.
+    /// CollectionsMarshal.GetValueRefOrNullRef: a single hash lookup, then the value is updated in place through a ref.
+    /// </summary>
+    [Benchmark]
+    public int SingleLookupGetValueRefUpdate() {
+        int key = _searchKeys[_searchIndex++ % (uint)_searchKeys.Length];
+        ref int value = ref CollectionsMarshal.GetValueRefOrNullRef(_dictionary, key);
+        if (!Unsafe.IsNullRef(ref value)) {
+            value++;
+            return value;
+        }
+        return 0;
+    }
+
+    /// <summary>
+    /// Lookups using a struct key without IEquatable: the default comparer falls back to ValueType.Equals/GetHashCode and boxes.
     /// </summary>
     [Benchmark]
     public int LookupWithUnoptimizedStructKey() {
@@ -117,7 +135,7 @@ public class DictionaryBenchmark {
     }
 
     /// <summary>
-    /// Highlights lookups using an optimized struct key implementing IEquatable, keeping evaluations lock-free and allocation-free.
+    /// Lookups using a struct key implementing IEquatable, which avoids boxing.
     /// </summary>
     [Benchmark]
     public int LookupWithOptimizedStructKey() {

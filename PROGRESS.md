@@ -1,70 +1,56 @@
 # Progress
 
-## Core Collections
+## Core Mutable
 - [x] List<T>
-- [x] Dictionary<TKey, TValue>
-- [x] HashSet<T>
 - [x] LinkedList<T>
 - [x] Queue<T>
 - [x] Stack<T>
+- [x] PriorityQueue<TElement, TPriority>
+- [x] Dictionary<TKey, TValue>
+- [x] HashSet<T>
+- [x] BitArray
 
-## Sorted Collections
+## Sorted
 - [x] SortedSet<T>
 - [x] SortedDictionary<TKey, TValue>
 - [x] SortedList<TKey, TValue>
 
-## Concurrent Collections
+## Concurrent
 - [x] ConcurrentDictionary<TKey, TValue>
 - [x] ConcurrentQueue<T>
 - [x] ConcurrentStack<T>
 - [x] ConcurrentBag<T>
 - [x] BlockingCollection<T>
-- [x] Channel<T>
 
-## Immutable Collections
+## Immutable
 - [x] ImmutableArray<T>
 - [x] ImmutableList<T>
 - [x] ImmutableHashSet<T>
 - [x] ImmutableDictionary<TKey, TValue>
 
-## Frozen Collections
+## Frozen
 - [x] FrozenSet<T>
 - [x] FrozenDictionary<TKey, TValue>
 
-## Specialized Collections
-- [x] PriorityQueue<TElement, TPriority>
-
-## Wrapper & Specialized Types
+## Read-only Views
 - [x] ReadOnlyCollection<T>
 - [x] ReadOnlyDictionary<TKey, TValue>
-- [x] BitArray
+
+## Related Types
+- [x] Channel<T>
 
 ## Comparisons
 - [x] list-vs-linkedlist
-- [x] dictionary-vs-sorteddictionary
-- [x] hashset-vs-list-lookup
-- [x] immutablearray-vs-immutablelist
 - [x] list-default-vs-capacity
-- [x] channel-vs-blockingcollection
-- [x] sorteddictionary-vs-sortedlist
-- [x] dictionary-vs-frozendictionary
-- [x] hashset-vs-frozenset
-
-## Benchmarks
-- [x] dictionary-vs-list-lookup
 - [x] hashset-vs-list-lookup
-- [x] list-add-vs-insert
-- [x] linkedlist-add-vs-list-insert
-- [x] queue-vs-list-removeat
-- [x] stack-vs-list-end-ops
-- [x] list-capacity-benchmark
-- [x] immutable-builder-benchmark
-- [x] failed-lookup-benchmark
+- [x] hashset-vs-frozenset
+- [x] dictionary-vs-frozendictionary
+- [x] dictionary-vs-sorteddictionary
+- [x] sorteddictionary-vs-sortedlist
+- [x] immutablearray-vs-immutablelist
+- [x] channel-vs-blockingcollection
 
 ## Scenarios
-- [x] caching
-- [x] deduplication
-- [x] producer-consumer
 - [x] configuration-caching (FrozenDictionary)
 - [x] async-pipeline (Channel)
 - [x] concurrent-deduplication (ConcurrentDictionary)
@@ -73,5 +59,9 @@
 - [x] priority-processing (PriorityQueue)
 
 ## Advanced Topics
-- [x] large-object-heap (LOH)
-- [x] struct-dictionary-keys (boxing)
+- [x] large-object-heap
+- [x] struct-dictionary-keys
+
+## Open items
+- [x] A benchmark page for `FailedLookupBenchmark` (in the hashset-vs-list-lookup comparison).
+- [ ] Re-run all benchmarks on one machine/runtime and record the environment in each page.

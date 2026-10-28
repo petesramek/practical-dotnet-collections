@@ -74,7 +74,7 @@ dotnet run -c Release -- --filter *Lookup.SortedDictionaryBenchmark*
 
 - **The Insertion Penalty**: For random mutations (`SortedDictionaryAdd`), building the tree layout takes **106,391 ns** compared to the hash table's **9,668 ns** at small scales. This makes the sorted dictionary **over 10x slower** for insertions. The framework is forced to run pointer comparison evaluations and handle complex node rotations continuously on every single addition.
 - **The Logarithmic Lookup Cost**: On search execution hot paths (`SortedDictionaryLookup`), performance degrades logarithmically as elements scale, jumping from 34.1 ns to **64.0 ns** as elements grow. It runs **nearly 18x slower** than standard hash tables. While a standard dictionary uses flat hash math calculations to hit bucket memory addresses directly (O(1)), a sorted dictionary must actively navigate node-by-node down pointer chains.
-- **The Memory Allocation Profile**: While `SortedDictionary` tracks elements via pointer chains rather than huge contiguous blocks (resulting in smaller up-front allocation metrics in this static slice check), it generates high numbers of short-lived reference objects on massive insert streams due to node allocation overhead.
+- **The Memory Allocation Profile**: While `SortedDictionary` tracks elements via pointer chains rather than huge contiguous blocks (resulting in smaller up-front allocation metrics in this static slice check), it generates high numbers of short-lived reference objects on large insert streams due to node allocation overhead.
 
 ## Practical optimizations
 - Use when ordering is required
@@ -94,7 +94,7 @@ dotnet run -c Release -- --filter *Lookup.SortedDictionaryBenchmark*
 
 ## When I would avoid it
 - Need fastest lookup → use Dictionary<TKey, TValue>
-- On high-frequency execution tracks where rapid, near-instant lookup execution speed is your primary performance metric. Use standard `Dictionary<TKey, TValue>` or `FrozenDictionary<TKey, TValue>`.
+- On high-frequency execution tracks where rapid, near-fast lookup execution speed is your primary performance metric. Use standard `Dictionary<TKey, TValue>` or `FrozenDictionary<TKey, TValue>`.
 - In workloads that are highly modification-heavy but rarely require sorted sequence access tracking loops.
 
 ## Rule of thumb

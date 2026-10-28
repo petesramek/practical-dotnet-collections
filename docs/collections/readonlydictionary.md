@@ -32,8 +32,8 @@ Wraps an existing IDictionary<TKey, TValue> without copying data. All operations
 
 ## Complexity overview
 
-- **Key Lookups**: Near-instant flat hash mapping performance delegated directly to the wrapped table.
-- **Collection Wrap Initializations**: Instant constant-time reference proxy linkage (O(1)).
+- **Key Lookups**: Fast flat hash mapping performance delegated directly to the wrapped table.
+- **Collection Wrap Initializations**: Constant-time constant-time reference proxy linkage (O(1)).
 
 ## Benchmark results
 
@@ -70,8 +70,8 @@ dotnet run -c Release -- --filter *Lookup.ReadOnlyDictionaryBenchmark*
 
 ### Interpretation
 
-- **The Zero-Overhead Lookup Triumph**: On pure key-based lookups (`ReadOnlyDictionaryLookup`), the wrapper introduces almost zero execution delay, processing queries in a flat **4.0 ns** compared to the raw dictionary's **3.7 ns** at N = 10,000. Because .NET routes lookups via a direct internal reference pointer delegate, your application gains complete API encapsulation with absolute zero performance penalties on search paths.
-- **The Foreach Interface Trap**: Iterating a `ReadOnlyDictionary` using an entry loop (`IterateReadOnlyDictionaryForeach`) is an exceptional execution performance pitfall. At N = 10,000, it takes a brutal **24.7 microseconds**—making it **2.5x slower** than iterating the native dictionary. Because the wrapper hides the inner type definitions, the JIT compiler cannot optimize the path. It forces .NET to fallback to virtual `IEnumerable<KeyValuePair<T,K>>` method lookups and creates a **48-Byte** generic enumerator reference type allocation on the heap on every single run.
+- **The Low-Overhead Lookup Result**: On pure key-based lookups (`ReadOnlyDictionaryLookup`), the wrapper introduces almost zero execution delay, processing queries in a flat **4.0 ns** compared to the raw dictionary's **3.7 ns** at N = 10,000. Because .NET routes lookups via a direct internal reference pointer delegate, your application gains complete API encapsulation with no measurable penalty on lookups.
+- **The Foreach Interface Trap**: Iterating a `ReadOnlyDictionary` using an entry loop (`IterateReadOnlyDictionaryForeach`) is a measurable performance pitfall. At N = 10,000, it takes a **24.7 microseconds**—making it **2.5x slower** than iterating the native dictionary. Because the wrapper hides the inner type definitions, the JIT compiler cannot optimize the path. It forces .NET to fallback to virtual `IEnumerable<KeyValuePair<T,K>>` method lookups and creates a **48-Byte** generic enumerator reference type allocation on the heap on every single run.
 - **The Struct Enumerator Edge**: The raw `IterateDictionaryForeach` track completes in just **9.7 microseconds** with zero heap allocations. When a loop interacts directly with a standard dictionary type, the C# compiler leverages a specialized, pre-compiled value-type struct enumerator (`Dictionary<TKey, TValue>.Enumerator`), which executes inline without heap tracking noise.
 
 ## Practical optimizations
@@ -87,7 +87,7 @@ dotnet run -c Release -- --filter *Lookup.ReadOnlyDictionaryBenchmark*
 ## When I would choose it
 - Need read-only view of dictionary
 - When building robust encapsulation layers to protect private state maps from being cleared, overwritten, or modified by external consumer code.
-- When you require a zero-allocation read-only view proxy that automatically and instantly reflects live structural updates handled by a background system task.
+- When you require a zero-allocation read-only view proxy that automatically and immediately reflects live structural updates handled by a background system task.
 
 ## When I would avoid it
 - Need true immutability → use ImmutableDictionary

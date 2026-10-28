@@ -35,8 +35,8 @@ Queue<T> uses a circular buffer backed by an array.
 
 ## Complexity overview
 
-- **Enqueue Mutations**: Near-instant pointer index assignment on average.
-- **Dequeue Extractions**: Near-instant head index advancement.
+- **Enqueue Mutations**: Fast pointer index assignment on average.
+- **Dequeue Extractions**: Fast head index advancement.
 
 ## Benchmark results
 
@@ -71,8 +71,8 @@ dotnet run -c Release -- --filter *Iteration.QueueBenchmark*
 
 ### Interpretation
 
-- **The List Removal Catastrophe**: Using a standard list to manage a streaming FIFO channel by calling `.RemoveAt(0)` (`ListRemoveAtBeginning`) hits a severe performance wall under scale. At N = 10,000, it takes a brutal **4.83 milliseconds**—making it **over 90x slower** than the queue loop. Because lists are straight contiguous vectors, popping an item from index 0 forces the processor to copy and slide all remaining 9,999 records forward in memory by one slot on every single iteration pass.
-- **The Circular Pointer Advantage**: The `QueueThroughput` method finishes the exact same 10,000 element streaming workload in a mere **52.1 microseconds**. Because its internal circular buffer replaces expensive element shifting loops with simple pointer arithmetic math, elements are enqueued and dequeued instantly. However, empty initializations force multiple dynamic capacity array expansions, generating 128.3 KB of data overhead.
+- **The List Removal Cost**: Using a standard list to manage a streaming FIFO channel by calling `.RemoveAt(0)` (`ListRemoveAtBeginning`) hits a significant performance wall under scale. At N = 10,000, it takes a **4.83 milliseconds**—making it **over 90x slower** than the queue loop. Because lists are straight contiguous vectors, popping an item from index 0 forces the processor to copy and slide all remaining 9,999 records forward in memory by one slot on every single iteration pass.
+- **The Circular Pointer Advantage**: The `QueueThroughput` method finishes the exact same 10,000 element streaming workload in **52.1 microseconds**. Because its internal circular buffer replaces expensive element shifting loops with simple pointer arithmetic math, elements are enqueued and dequeued cheaply. However, empty initializations force multiple dynamic capacity array expansions, generating 128.3 KB of data overhead.
 - **The Pre-Sized Payload Optimization**: The `PreSizedQueueThroughput` track resolves the dynamic resizing tax completely. Specifying the target limit upfront in the constructor (`new Queue<int>(N)`) reduces total allocations down to **39.1 KB** (a **69.5% memory reduction**) and cuts execution time to 46.8 us, eliminating intermediate array copies and heap garbage collection traffic.
 
 ## Practical optimizations

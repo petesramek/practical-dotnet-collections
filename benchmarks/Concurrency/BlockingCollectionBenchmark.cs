@@ -1,11 +1,14 @@
 using BenchmarkDotNet.Attributes;
 using System.Collections.Concurrent;
+using static PracticalDotNetCollections.Benchmarks.Concurrency.BenchmarkThreads;
 
 namespace PracticalDotNetCollections.Benchmarks.Concurrency;
 
 /// <summary>
 /// Benchmarks comparing <see cref="BlockingCollection{T}"/> and <see cref="ConcurrentQueue{T}"/>.
-/// Evaluates raw concurrent throughput alongside behavior under heavy downstream consumption bottlenecks.
+/// All variants use dedicated threads and the same simulated per-item work, so the differences come from the
+/// collection (blocking/bounding behavior) rather than from the thread pool or the work itself.
+/// In the slow consumer scenarios elapsed time is dominated by the consumer; the useful signal there is allocation.
 /// </summary>
 [MemoryDiagnoser]
 public class BlockingCollectionBenchmark {
@@ -14,27 +17,29 @@ public class BlockingCollectionBenchmark {
     private const int BoundedLimit = 500;
 
     /// <summary>
-    /// The total number of items sent through the messaging pipelines.
+    /// The total number of items sent through the pipelines.
     /// </summary>
     [Params(10_000, 50_000)]
     public int N;
 
     /// <summary>
-    /// Measures raw concurrent throughput of a standard ConcurrentQueue when threads flow freely.
+    /// Unbounded ConcurrentQueue with polling consumers (they yield when the queue is empty).
     /// </summary>
     [Benchmark]
     public void ThroughputConcurrentQueue() {
         var queue = new ConcurrentQueue<int>();
         int eventsPerProducer = N / ProducerCount;
-        long totalConsumed = 0;
+        int remaining = eventsPerProducer * ProducerCount;
 
         var consumers = new Task[ConsumerCount];
         for (int i = 0; i < ConsumerCount; i++) {
-            consumers[i] = Task.Run(() => {
-                while (Interlocked.Read(ref totalConsumed) < N) {
+            consumers[i] = Start(() => {
+                while (Volatile.Read(ref remaining) > 0) {
                     if (queue.TryDequeue(out _)) {
-                        Interlocked.Increment(ref totalConsumed);
-                        Thread.SpinWait(10);
+                        Interlocked.Decrement(ref remaining);
+                        Thread.SpinWait(FastWork);
+                    } else {
+                        Thread.Yield();
                     }
                 }
             });
@@ -42,7 +47,7 @@ public class BlockingCollectionBenchmark {
 
         var producers = new Task[ProducerCount];
         for (int i = 0; i < ProducerCount; i++) {
-            producers[i] = Task.Run(() => {
+            producers[i] = Start(() => {
                 for (int j = 0; j < eventsPerProducer; j++) {
                     queue.Enqueue(j);
                 }
@@ -54,53 +59,65 @@ public class BlockingCollectionBenchmark {
     }
 
     /// <summary>
-    /// Measures raw concurrent throughput of a bounded BlockingCollection when threads flow freely.
+    /// Unbounded BlockingCollection (wraps a ConcurrentQueue) with blocking consumers.
     /// </summary>
     [Benchmark]
-    public void ThroughputBlockingCollection() {
-        using var pipeline = new BlockingCollection<int>(boundedCapacity: BoundedLimit);
-        int eventsPerProducer = N / ProducerCount;
+    public void ThroughputBlockingCollectionUnbounded() => RunBlockingCollection(new BlockingCollection<int>());
 
-        var consumers = new Task[ConsumerCount];
-        for (int i = 0; i < ConsumerCount; i++) {
-            consumers[i] = Task.Run(() => {
-                foreach (var _ in pipeline.GetConsumingEnumerable()) {
-                    Thread.SpinWait(10);
-                }
-            });
+    /// <summary>
+    /// Bounded BlockingCollection: producers block when the collection is full.
+    /// </summary>
+    [Benchmark]
+    public void ThroughputBlockingCollectionBounded() => RunBlockingCollection(new BlockingCollection<int>(BoundedLimit));
+
+    private void RunBlockingCollection(BlockingCollection<int> pipeline) {
+        using (pipeline) {
+            int eventsPerProducer = N / ProducerCount;
+
+            var consumers = new Task[ConsumerCount];
+            for (int i = 0; i < ConsumerCount; i++) {
+                consumers[i] = Start(() => {
+                    foreach (var _ in pipeline.GetConsumingEnumerable()) {
+                        Thread.SpinWait(FastWork);
+                    }
+                });
+            }
+
+            var producers = new Task[ProducerCount];
+            for (int i = 0; i < ProducerCount; i++) {
+                producers[i] = Start(() => {
+                    for (int j = 0; j < eventsPerProducer; j++) {
+                        pipeline.Add(j);
+                    }
+                });
+            }
+
+            Task.WaitAll(producers);
+            pipeline.CompleteAdding();
+            Task.WaitAll(consumers);
         }
-
-        var producers = new Task[ProducerCount];
-        for (int i = 0; i < ProducerCount; i++) {
-            producers[i] = Task.Run(() => {
-                for (int j = 0; j < eventsPerProducer; j++) {
-                    pipeline.Add(j);
-                }
-            });
-        }
-
-        Task.WhenAll(producers).ContinueWith(_ => pipeline.CompleteAdding());
-        Task.WaitAll(consumers);
     }
 
     /// <summary>
-    /// Measures execution time for an unconstrained concurrent queue during a severe worker bottleneck.
+    /// One fast producer and one slow consumer with an unbounded ConcurrentQueue: the queue grows with the backlog.
     /// </summary>
     [Benchmark]
-    public void BackpressureConcurrentQueue() {
+    public void SlowConsumerConcurrentQueue() {
         var queue = new ConcurrentQueue<int>();
-        long totalConsumed = 0;
+        int remaining = N;
 
-        var consumer = Task.Run(() => {
-            while (Interlocked.Read(ref totalConsumed) < N) {
+        var consumer = Start(() => {
+            while (Volatile.Read(ref remaining) > 0) {
                 if (queue.TryDequeue(out _)) {
-                    Interlocked.Increment(ref totalConsumed);
-                    Thread.SpinWait(500);
+                    Interlocked.Decrement(ref remaining);
+                    Thread.SpinWait(SlowWork);
+                } else {
+                    Thread.Yield();
                 }
             }
         });
 
-        var producer = Task.Run(() => {
+        var producer = Start(() => {
             for (int i = 0; i < N; i++) {
                 queue.Enqueue(i);
             }
@@ -110,19 +127,19 @@ public class BlockingCollectionBenchmark {
     }
 
     /// <summary>
-    /// Measures execution time for a bounded blocking collection during a severe worker bottleneck.
+    /// One fast producer and one slow consumer with a bounded BlockingCollection: the backlog never exceeds the bound.
     /// </summary>
     [Benchmark]
-    public void BackpressureBlockingCollection() {
-        using var pipeline = new BlockingCollection<int>(boundedCapacity: BoundedLimit);
+    public void SlowConsumerBlockingCollection() {
+        using var pipeline = new BlockingCollection<int>(BoundedLimit);
 
-        var consumer = Task.Run(() => {
+        var consumer = Start(() => {
             foreach (var _ in pipeline.GetConsumingEnumerable()) {
-                Thread.SpinWait(500);
+                Thread.SpinWait(SlowWork);
             }
         });
 
-        var producer = Task.Run(() => {
+        var producer = Start(() => {
             for (int i = 0; i < N; i++) {
                 pipeline.Add(i);
             }

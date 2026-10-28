@@ -2,7 +2,7 @@
 
 ## What it is
 
-FrozenSet<T> is a read-only, precomputed hash-based set optimized for extremely fast lookups.
+FrozenSet<T> is a read-only, precomputed hash-based set optimized for very fast lookups.
 
 ## Typical use cases
 - Hot-path lookups
@@ -71,7 +71,7 @@ dotnet run -c Release -- --filter *Lookup.FrozenSetBenchmark*
 ### Interpretation
 
 - **The Startup Optimization Tax**: Building a `FrozenSet` introduces a notable up-front processing and allocation tax. At N = 100,000, calling `.ToFrozenSet()` takes **1,354,242 ns** and allocates nearly **4 MB** of temporary heap memory, triggering significant Gen 0, Gen 1, and Gen 2 garbage collection sweeps. This occurs because the .NET engine scans and maps the uniqueness of the elements to choose the fastest specialized underlying matching logic.
-- **The Containment Check Victory**: Once compiled, the performance payoff on read paths is substantial. `FrozenSetContains` evaluates inclusion in just **1.7 ns to 2.6 ns**. It runs **nearly 2x faster** than a standard `HashSet`, which drops to 4.099 ns as the elements increase. By removing traditional hash collision check structures and dynamic capacity safety boundaries, the CPU executes validations almost instantly.
+- **The Containment Check Result**: Once compiled, the performance payoff on read paths is substantial. `FrozenSetContains` evaluates inclusion in just **1.7 ns to 2.6 ns**. It runs **nearly 2x faster** than a standard `HashSet`, which drops to 4.099 ns as the elements increase. By removing traditional hash collision check structures and dynamic capacity safety boundaries, the CPU executes fewer instructions per check.
 - **Flat Access Scaling**: Because the internal structure is precomputed and tailored for the exact keys it holds, access scaling remains highly optimized even as the set increases 10x from 10,000 to 100,000 elements.
 
 ## Practical optimizations
@@ -84,7 +84,7 @@ dotnet run -c Release -- --filter *Lookup.FrozenSetBenchmark*
 - **Using FrozenSet for dynamic collections**: This structure is completely immutable. If elements need to be added, cleared, or changed at runtime based on application events, do not use `FrozenSet`.
 
 ## When I would choose it
-- Extremely frequent lookups
+- Very frequent lookups
 - Data does not change
 - When creating centralized system routing checks, security token allowlists, or immutable hash rules applied to high-frequency processing workflows.
 
