@@ -57,33 +57,34 @@ dotnet run -c Release -- --filter *BitArrayBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **CreateBitArray** | 10000 | 22,449.74 ns | 0.6104 | - | - | 1,312 B |
-| **CreateBoolArray** | 10000 | 5,295.74 ns | 4.7836 | - | - | 10,024 B |
-| **ReadBitArray** | 10000 | 9,820.63 ns | - | - | - | - |
-| **ReadBoolArray** | 10000 | 4,909.43 ns | - | - | - | - |
-| **WriteBitArray** | 10000 | 21,495.52 ns | - | - | - | - |
-| **WriteBoolArray** | 10000 | 5,263.31 ns | - | - | - | - |
-| **ScenarioPermissionValidationBoolLoop** | 10000 | 8,742.56 ns | - | - | - | - |
-| **ScenarioPermissionValidationBitArrayBulk** | 10000 | 75.13 ns | - | - | - | - |
-| | | | | | | |
-| **CreateBitArray** | 100000 | 216,681.91 ns | 5.8594 | - | - | 12,560 B |
-| **CreateBoolArray** | 100000 | 90,868.47 ns | 31.1279 | 31.1279 | 31.1279 | 100,034 B |
-| **ReadBitArray** | 100000 | 96,427.83 ns | - | - | - | - |
-| **ReadBoolArray** | 100000 | 64,699.84 ns | - | - | - | - |
-| **WriteBitArray** | 100000 | 211,771.78 ns | - | - | - | - |
-| **WriteBoolArray** | 100000 | 49,970.95 ns | - | - | - | - |
-| **ScenarioPermissionValidationBoolLoop** | 100000 | 86,149.80 ns | - | - | - | - |
-| **ScenarioPermissionValidationBitArrayBulk** | 100000 | 688.70 ns | - | - | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Memory.BitArrayBenchmark-report-github.md).
+
+| Method                                   | N      | Mean          | Error         | StdDev        | Gen0    | Gen1    | Gen2    | Allocated |
+|----------------------------------------- |------- |--------------:|--------------:|--------------:|--------:|--------:|--------:|----------:|
+| **CreateBitArray**                           | **10000**  |  **26,359.80 ns** |    **881.031 ns** |    **391.183 ns** |  **0.6104** |       **-** |       **-** |    **1312 B** |
+| CreateBoolArray                          | 10000  |   7,180.81 ns |    577.588 ns |    256.453 ns |  4.7836 |       - |       - |   10024 B |
+| ReadBitArray                             | 10000  |  11,904.23 ns |    295.513 ns |    131.210 ns |       - |       - |       - |         - |
+| ReadBoolArray                            | 10000  |   7,940.32 ns |     94.666 ns |     33.759 ns |       - |       - |       - |         - |
+| WriteBitArray                            | 10000  |  26,659.86 ns |  1,606.002 ns |    839.970 ns |       - |       - |       - |         - |
+| WriteBoolArray                           | 10000  |   5,744.17 ns |    143.027 ns |     63.505 ns |       - |       - |       - |         - |
+| ScenarioPermissionValidationBoolLoop     | 10000  |  10,472.86 ns |    223.630 ns |    116.963 ns |       - |       - |       - |         - |
+| ScenarioPermissionValidationBitArrayBulk | 10000  |      90.81 ns |      3.560 ns |      1.580 ns |       - |       - |       - |         - |
+| **CreateBitArray**                           | **100000** | **256,227.50 ns** |  **4,012.787 ns** |  **2,098.765 ns** |  **5.8594** |       **-** |       **-** |   **12560 B** |
+| CreateBoolArray                          | 100000 | 155,351.06 ns | 12,251.478 ns |  6,407.760 ns | 31.0059 | 31.0059 | 31.0059 |  100034 B |
+| ReadBitArray                             | 100000 | 120,033.12 ns |  4,110.078 ns |  2,149.650 ns |       - |       - |       - |         - |
+| ReadBoolArray                            | 100000 |  78,132.92 ns |    631.638 ns |    330.359 ns |       - |       - |       - |         - |
+| WriteBitArray                            | 100000 | 259,202.48 ns |  7,911.205 ns |  2,821.212 ns |       - |       - |       - |         - |
+| WriteBoolArray                           | 100000 |  59,646.11 ns |    397.945 ns |    176.690 ns |       - |       - |       - |         - |
+| ScenarioPermissionValidationBoolLoop     | 100000 | 113,220.67 ns | 21,638.137 ns | 11,317.164 ns |       - |       - |       - |         - |
+| ScenarioPermissionValidationBitArrayBulk | 100000 |     860.34 ns |     14.915 ns |      7.801 ns |       - |       - |       - |         - |
 
 ### Interpretation
 
 The metrics expose three clear performance realities:
 
-1. **Memory Savings:** At a size of 100,000 items, the standard boolean array requires over 100 KB of heap memory, while the BitArray requires only 12.5 KB. This is a large 87.4% reduction in memory size. This compaction prevents heavy garbage collection pressure. As seen at 100,000 elements, the boolean array triggers multiple rounds of Gen 0, Gen 1, and Gen 2 garbage collection, while the BitArray covers the exact same number of flags without causing any multi-generation garbage collection activity.
-2. **Individual Access Cost:** Modifying or reading independent elements one-by-one is noticeably slower using BitArray. Individual reads take roughly 1.5x longer, and individual writes take up to 4x longer. This happens because finding or altering a specific bit forces the CPU to run bit-shifting and masking math routines on the internal integer structure, whereas a standard boolean array accesses direct byte addresses.
-3. **Extreme Bulk Operation Speed:** The real value of BitArray is shown in the PermissionValidation test. At 100,000 items, filtering permissions using a standard loop takes 86,149 ns. Using the bulk BitArray method reduces this to just 688 ns—making it over 125 times faster. Instead of checking indices one by one with slow branching logic, the hardware directly merges whole blocks of 32 flags at the exact same time inside CPU registers.
+1. **Memory savings:** At 100,000 items, `CreateBitArray` allocates 12,560 B versus 100,034 B for `CreateBoolArray` (about 87% less). The boolean-array row also records Gen 1 and Gen 2 collections; the BitArray row does not.
+2. **Individual access cost:** In this run, reading and writing individual bits took longer than accessing a `bool[]` (120 us vs 78 us for reads; 259 us vs 60 us for writes). BitArray must mask and shift bits, while a boolean array accesses individual bytes.
+3. **Bulk operation:** `ScenarioPermissionValidationBitArrayBulk` took 860 ns versus 113 us for the loop, about 130x faster in this run. Bulk bitwise operations process packed values rather than checking each flag separately.
 
 ## Practical optimizations
 - **Prefer over `bool[]` when memory footprint affects CPU caching**: Minimizing memory size keeps your data packed tightly in the CPU L1/L2 cache, which often speeds up execution more than the bit-shifting math slows it down.

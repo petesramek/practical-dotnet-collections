@@ -59,7 +59,7 @@ See [Channel<T>](../related-types/channel.md). Raw throughput was comparable; th
 ### Use Channel<T> when
 - You build async systems
 - You run in ASP.NET / services
-- You want low allocation under a slow consumer (about 6 KB vs 8.6 MB at N = 50,000 in the benchmark)
+- You want low allocation under a slow consumer (6.32 KB vs 5.20 MB at N = 50,000 in the benchmark)
 
 ---
 

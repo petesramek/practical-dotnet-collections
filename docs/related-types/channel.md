@@ -58,24 +58,23 @@ dotnet run -c Release -- --filter *RelatedTypes.ChannelBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Allocated |
-| :--- | :--- | :--- | :--- | :--- |
-| **ThroughputChannel** | 10000 | 6.223 ms | 156.2500 | 316.55 KB |
-| **ThroughputBlockingCollection** | 10000 | 17.295 ms | 140.6250 | 262.4 KB |
-| **SlowConsumerChannel** | 10000 | 255.256 ms | - | 6.16 KB |
-| **SlowConsumerBlockingCollection** | 10000 | 268.188 ms | - | 365.88 KB |
-| | | | | |
-| **ThroughputChannel** | 50000 | 29.101 ms | 593.7500 | 1,232.01 KB |
-| **ThroughputBlockingCollection** | 50000 | 34.824 ms | 666.6667 | 1,385.54 KB |
-| **SlowConsumerChannel** | 50000 | 1,111.970 ms | - | 6.32 KB |
-| **SlowConsumerBlockingCollection** | 50000 | 1,092.624 ms | 4000.0000 | 8,649.47 KB |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.RelatedTypes.ChannelBenchmark-report-github.md).
 
-Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10. Producers and consumers run on the thread pool for `Channel` and on dedicated threads for `BlockingCollection`, but results still depend on core count and scheduler behavior, and the error margins of the `BlockingCollection` rows are large.
+| Method                         | N     | Mean         | Error       | StdDev     | Gen0      | Allocated  |
+|------------------------------- |------ |-------------:|------------:|-----------:|----------:|-----------:|
+| **ThroughputChannel**              | **10000** |     **5.648 ms** |   **0.4680 ms** |  **0.2448 ms** |  **156.2500** |   **316.9 KB** |
+| ThroughputBlockingCollection   | 10000 |     7.765 ms |   0.9525 ms |  0.4982 ms |  156.2500 |  294.05 KB |
+| SlowConsumerChannel            | 10000 |   261.602 ms | 109.1317 ms | 57.0780 ms |         - |    6.26 KB |
+| SlowConsumerBlockingCollection | 10000 |   198.916 ms |  12.7234 ms |  5.6493 ms |  666.6667 | 1711.96 KB |
+| **ThroughputChannel**              | **50000** |    **30.885 ms** |   **2.7146 ms** |  **1.4198 ms** |  **750.0000** | **1542.63 KB** |
+| ThroughputBlockingCollection   | 50000 |    37.731 ms |   3.0132 ms |  1.3379 ms |  692.3077 | 1448.37 KB |
+| SlowConsumerChannel            | 50000 | 1,145.841 ms |  47.3133 ms | 21.0074 ms |         - |    6.32 KB |
+| SlowConsumerBlockingCollection | 50000 | 1,032.069 ms | 126.3392 ms | 66.0778 ms | 2000.0000 | 5202.84 KB |
 
 ### Interpretation
 
-1. **Throughput**: with a fast consumer, `Channel` was faster than `BlockingCollection` in both runs (6.2 ms vs 17.3 ms at N = 10,000 and 29.1 ms vs 34.8 ms at N = 50,000), but the `BlockingCollection` error margins overlap the gap at N = 50,000. Treat the two as comparable in raw throughput.
-2. **Slow consumer**: the run time is dominated by the consumer's work (about 1.1 s at N = 50,000 for both), so speed does not differ. Allocation does: `Channel` allocated about 6 KB while `BlockingCollection` allocated about 8.6 MB at N = 50,000, presumably from the blocking and wake-up bookkeeping while the bounded buffer is full. The benchmark does not isolate the cause.
+1. **Throughput**: with a fast consumer, `Channel` had the lower mean in both runs (5.65 ms vs 7.77 ms at N = 10,000; 30.9 ms vs 37.7 ms at N = 50,000). The Error ranges do not overlap in this run, though the benchmark environment and scheduling affect these results.
+2. **Slow consumer**: at N = 50,000, the mean times were 1.15 s for `Channel` and 1.03 s for `BlockingCollection`; their Error ranges overlap. Allocation differed substantially: 6.32 KB for `Channel` versus 5.20 MB for `BlockingCollection`. The benchmark does not isolate the cause of the allocation difference.
 3. **Threads**: `Channel` writers and readers await instead of blocking, so a waiting consumer does not hold a thread. In this benchmark `Channel` runs on the thread pool with `async`/`await` and `BlockingCollection` runs on dedicated threads (because it blocks), so the two rows are not identical setups; the benchmark does not measure thread usage directly.
 
 ## Practical optimizations

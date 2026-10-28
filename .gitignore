@@ -6,4 +6,8 @@ obj/
 *.suo
 *.log
 BenchmarkDotNet.Artifacts/
+!**/BenchmarkDotNet.Artifacts/
+!**/BenchmarkDotNet.Artifacts/results/
+**/BenchmarkDotNet.Artifacts/results/*
+!**/BenchmarkDotNet.Artifacts/results/*-report-github.md
 TestResults/

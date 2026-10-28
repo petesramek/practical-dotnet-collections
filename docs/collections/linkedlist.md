@@ -57,23 +57,24 @@ dotnet run -c Release -- --filter *Add.LinkedListBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **ListInsertAtBeginning** | 1000 | 61,844.2193 ns | 3.9673 | - | 8,392 B |
-| **LinkedListAddFirst** | 1000 | 12,793.8849 ns | 22.9645 | - | 48,040 B |
-| **LinkedListReadIndex** | 1000 | 501.1954 ns | - | - | - |
-| **ListReadIndex** | 1000 | 0.8606 ns | - | - | - |
-| | | | | | |
-| **ListInsertAtBeginning** | 10000 | 4,676,077.7375 ns | 54.6875 | - | 131,368 B |
-| **LinkedListAddFirst** | 10000 | **152,201.8592 ns** | 97.6563 | 61.2793 | 480,040 B |
-| **LinkedListReadIndex** | 10000 | **5,567.5224 ns** | - | - | - |
-| **ListReadIndex** | 10000 | **0.8598 ns** | - | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Add.LinkedListBenchmark-report-github.md).
+
+| Method                | N     | Mean             | Error             | StdDev          | Gen0    | Gen1    | Allocated |
+|---------------------- |------ |-----------------:|------------------:|----------------:|--------:|--------:|----------:|
+| **ListInsertAtBeginning** | **1000**  |    **71,920.901 ns** |    **19,398.8317 ns** |   **8,613.2015 ns** |  **3.9063** |       **-** |    **8392 B** |
+| LinkedListAddFirst    | 1000  |    16,643.207 ns |       755.1503 ns |     335.2914 ns | 22.9492 |       - |   48040 B |
+| LinkedListReadIndex   | 1000  |       760.756 ns |        54.8993 ns |      28.7134 ns |       - |       - |         - |
+| ListReadIndex         | 1000  |         1.549 ns |         0.2242 ns |       0.0995 ns |       - |       - |         - |
+| **ListInsertAtBeginning** | **10000** | **7,564,462.484 ns** | **1,411,572.0659 ns** | **738,279.4849 ns** | **46.8750** |       **-** |  **131368 B** |
+| LinkedListAddFirst    | 10000 |   264,712.200 ns |    21,673.7230 ns |  11,335.7762 ns | 98.3887 | 61.0352 |  480040 B |
+| LinkedListReadIndex   | 10000 |     9,248.812 ns |     1,517.6221 ns |     673.8336 ns |       - |       - |         - |
+| ListReadIndex         | 10000 |         1.346 ns |         0.3520 ns |       0.1841 ns |       - |       - |         - |
 
 ### Interpretation
 
-- **The Array Shifting Cost**: Appending items to the front of a standard list (`ListInsertAtBeginning`) is a significant performance pitfall. At N = 10,000, it takes a **4.67 milliseconds**. Because arrays are contiguous, adding an item at index 0 forces the CPU to copy and shift all existing 9,999 items forward by one memory slot on every single loop pass.
-- **The Head Insertion Result**: The `LinkedListAddFirst` method bypasses this shifting cost entirely, completing the exact same 10,000 element front-insertion pass in just **152 microseconds**—making it **over 30x faster** than a standard list. It allocates a node and updates the head references immediately without touching any existing memory slots. However, notice the allocation tax: it generates **480 KB** of heap memory trash (nearly 4x more than the list) and forces heavy garbage collection cleanups due to creating 10,000 independent wrapper objects.
-- **The Index Reading Penalty**: On index-based lookup execution paths, the structural comparison reverses. `ListReadIndex` performs constant-time lookups in a flat **0.85 ns** regardless of data scale because it calculates memory hardware offsets directly. In contrast, `LinkedListReadIndex` takes **5,567.5 ns**—making it **nearly 6,500x slower**. Because a linked list lacks contiguous memory offsets, it must traverse from node to node to resolve an index.
+- **The array shifting cost**: inserting 10,000 items at the beginning with `ListInsertAtBeginning` averaged **7.56 ms**. An array-backed list shifts existing elements on each front insertion.
+- **The head insertion result**: `LinkedListAddFirst` averaged **265 us** for the same workload, about 29x faster by mean in this run. It allocated **480 KB** versus **131 KB** for the list, because each linked-list entry requires a node.
+- **The index reading penalty**: at N = 10,000, `LinkedListReadIndex` averaged **9.25 us** versus **1.35 ns** for `ListReadIndex`. A linked list must traverse nodes to reach an index, while a list indexes its backing array directly.
 
 ## Practical optimizations
 - Use when insert/remove dominates

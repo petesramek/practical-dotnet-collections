@@ -57,25 +57,26 @@ dotnet run -c Release -- --filter *ConcurrentDictionaryBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ConcurrentDictionaryAdd** | 10000 | 2,643.87 us | 234.3750 | 109.3750 | 39.0625 | 1301.11 KB |
-| **DictionaryAddWithLock** | 10000 | 711.74 us | 224.6094 | 91.7969 | 86.9141 | 666.62 KB |
-| **GetOrAddWithAllocatingClosure** | 10000 | 170.22 us | 425.0488 | - | - | 861.8 KB |
-| **GetOrAddWithStatefulAllocationFree**| 10000 | 23.17 us | 1.1292 | - | - | 2.28 KB |
-| | | | | | | |
-| **ConcurrentDictionaryAdd** | 50000 | 12,140.33 us | 1062.5000 | 734.3750 | 250.0000 | 5808.46 KB |
-| **DictionaryAddWithLock** | 50000 | 3,267.98 us | 636.7188 | 425.7813 | 425.7813 | 2901.61 KB |
-| **GetOrAddWithAllocatingClosure** | 50000 | 765.98 us | 2113.2813 | - | - | 4299.43 KB |
-| **GetOrAddWithStatefulAllocationFree**| 50000 | 88.91 us | 1.0986 | - | - | 2.3 KB |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Concurrency.ConcurrentDictionaryBenchmark-report-github.md).
+
+| Method                             | N     | Mean         | Error       | StdDev       | Gen0      | Gen1     | Gen2     | Allocated  |
+|----------------------------------- |------ |-------------:|------------:|-------------:|----------:|---------:|---------:|-----------:|
+| **ConcurrentDictionaryAdd**            | **10000** |  **2,526.25 μs** |   **587.72 μs** |   **307.389 μs** |  **218.7500** |  **93.7500** |  **31.2500** | **1299.02 KB** |
+| DictionaryAddWithLock              | 10000 |    978.41 μs |   249.46 μs |   130.473 μs |  214.8438 |  85.9375 |  82.0313 |  664.96 KB |
+| GetOrAddWithAllocatingClosure      | 10000 |    266.57 μs |    31.52 μs |    16.487 μs |  425.2930 |        - |        - |  861.77 KB |
+| GetOrAddWithStatefulAllocationFree | 10000 |     46.87 μs |    14.08 μs |     7.364 μs |    1.1597 |        - |        - |    2.33 KB |
+| **ConcurrentDictionaryAdd**            | **50000** | **17,689.75 μs** | **3,948.38 μs** | **2,065.078 μs** | **1031.2500** | **687.5000** | **250.0000** | **5796.43 KB** |
+| DictionaryAddWithLock              | 50000 |  4,167.43 μs | 1,034.45 μs |   459.302 μs |  570.3125 | 429.6875 | 429.6875 | 2853.34 KB |
+| GetOrAddWithAllocatingClosure      | 50000 |  1,500.22 μs |   217.68 μs |   113.852 μs | 2115.2344 |        - |        - |  4299.4 KB |
+| GetOrAddWithStatefulAllocationFree | 50000 |  6,618.08 μs | 5,724.10 μs | 2,993.818 μs |         - |        - |        - |    2.35 KB |
 
 ### Interpretation
 
 The metrics expose two vital architectural realities regarding shared map tracking:
 
-1. **The Insertion Contention Result:** For pure, frantic insertion tasks (`Add`), a standard dictionary behind a global `lock` runs roughly 3.7x faster and uses half the allocation space (~3.2 ms vs ~12.1 ms at N = 50,000). This occurs because initializing a brand new `ConcurrentDictionary` requires allocating multiple localized synchronization primitives. Under concurrent write pressure from an empty state, the synchronization overhead of balancing bucket regions out-costs a fast global loop monitor lock.
-2. **The Lambda Closure Extinement:** The true optimization focus of `ConcurrentDictionary` is exposed by the `.GetOrAdd()` tracks. In `GetOrAddWithAllocatingClosure`, passing variables from an outer scope inside the lambda factory forces the compiler to allocate hidden closure objects on the heap on every single loop pass. This creates a large allocation footprint (4.3 MB at N = 50,000) and drags execution speed down to 765.98 us. 
-3. **The Stateful Overload Result:** Switching to the stateful overload variant (`GetOrAddWithStatefulAllocationFree`) strips the allocation footprint down to 2.3 KB and speeds up evaluation to 88.91 us—about 9x faster. Passing context parameters directly through the state parameter allows the compiler to cache and reuse a single static function pointer handle, avoiding the per-call heap allocation.
+1. **Insertion contention**: at N = 50,000, `DictionaryAddWithLock` averaged 4.17 ms and allocated 2.85 MB, compared with 17.69 ms and 5.80 MB for `ConcurrentDictionaryAdd`. The Error margins do not overlap in this run. The locked dictionary is a useful single-run comparison, not a general substitute for thread-safe access.
+2. **Lambda closure allocations**: `GetOrAddWithAllocatingClosure` allocated 4.30 MB at N = 50,000, while `GetOrAddWithStatefulAllocationFree` allocated 2.35 KB. The stateful overload avoids the per-call closure allocation, but its N = 50,000 timing has a very large Error margin; these results do not establish a consistent speed advantage.
+3. **Stateful overload**: pass captured context through the overload's state parameter and use a static factory to avoid closure allocations. Compare the Mean, Error, and StdDev columns for the timing; the allocation difference is clearer than the timing result in this run.
 
 ## Practical optimizations
 - **Always use the stateful overloads for factory lambdas**: When using `.GetOrAdd()` or `.AddOrUpdate()`, pass external scope variables into the state parameter. This keeps your callback delegates allocation-free.

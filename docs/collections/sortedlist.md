@@ -56,23 +56,24 @@ dotnet run -c Release -- --filter *Add.SortedListBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **SortedListRandomAdd** | 1000 | 95,933.94 ns | 7.9346 | - | 16,848 B |
-| **SortedDictionaryRandomAdd** | 1000 | 79,349.38 ns | 22.9492 | - | 48,112 B |
-| **SortedListLookup** | 1000 | 35.89 ns | - | - | - |
-| **SortedDictionaryLookup** | 1000 | 34.54 ns | - | - | - |
-| | | | | | |
-| **SortedListRandomAdd** | 10000 | **5,230,231.12 ns** | 93.7500 | 23.4375 | **262,800 B** |
-| **SortedDictionaryRandomAdd** | 10000 | **1,621,457.84 ns** | 93.7500 | 58.5938 | 480,112 B |
-| **SortedListLookup** | 10000 | **53.11 ns** | - | - | - |
-| **SortedDictionaryLookup** | 10000 | **63.27 ns** | - | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Add.SortedListBenchmark-report-github.md).
+
+| Method                    | N     | Mean            | Error            | StdDev         | Gen0    | Gen1    | Allocated |
+|-------------------------- |------ |----------------:|-----------------:|---------------:|--------:|--------:|----------:|
+| **SortedListRandomAdd**       | **1000**  |   **130,762.35 ns** |    **24,016.882 ns** |  **12,561.294 ns** |  **7.8125** |       **-** |   **16848 B** |
+| SortedDictionaryRandomAdd | 1000  |   126,424.63 ns |    10,800.755 ns |   4,795.602 ns | 22.9492 |       - |   48112 B |
+| SortedListLookup          | 1000  |        77.22 ns |        17.405 ns |       9.103 ns |       - |       - |         - |
+| SortedDictionaryLookup    | 1000  |        57.62 ns |         7.425 ns |       3.883 ns |       - |       - |         - |
+| **SortedListRandomAdd**       | **10000** | **9,849,729.38 ns** | **1,492,302.591 ns** | **662,591.599 ns** | **93.7500** | **31.2500** |  **262800 B** |
+| SortedDictionaryRandomAdd | 10000 | 2,584,087.85 ns |   623,939.769 ns | 326,332.564 ns | 93.7500 | 62.5000 |  480112 B |
+| SortedListLookup          | 10000 |       102.12 ns |        16.396 ns |       8.575 ns |       - |       - |         - |
+| SortedDictionaryLookup    | 10000 |       104.54 ns |        40.959 ns |      21.422 ns |       - |       - |         - |
 
 ### Interpretation
 
-- **The Array Shifting Cost**: For random insertions (`SortedListRandomAdd`), scaling to N = 10,000 shows a large performance barrier. The method takes **5.23 milliseconds**, making it **over 3.2x slower** than a sorted dictionary. Because `SortedList` uses primitive internal arrays, inserting non-sequential keys forces the CPU to copy and shift elements down the array block on every single loop pass.
-- **The Read-Path Result**: On lookup execution hot paths (`SortedListLookup`), the array layout demonstrates its structural advantage at scale. At N = 10,000, it processes queries in **53.1 ns** compared to the tree's **63.2 ns**. Bypassing deep tree pointer dereferences allows the processor to isolate data inside flat cache lines using direct binary searches.
-- **The Allocation Compaction Profile**: At N = 10,000, `SortedList` utilizes nearly **half the allocation footprint** of a sorted dictionary (~262 KB vs ~480 KB). It packs parameters tightly into flat primitive buffers instead of populating individual heap nodes.
+- **The array shifting cost**: at N = 10,000, `SortedListRandomAdd` averaged **9.85 ms** versus **2.58 ms** for `SortedDictionaryRandomAdd`. The Error margins are wide, but the measured means favor the sorted dictionary for this random-insertion workload.
+- **Lookup cost**: at N = 10,000, `SortedListLookup` and `SortedDictionaryLookup` averaged **102 ns** and **105 ns**. Their Error margins overlap, so this run does not establish a lookup advantage for either collection.
+- **Allocation**: at N = 10,000, `SortedListRandomAdd` allocated **263 KB** versus **480 KB** for `SortedDictionaryRandomAdd`.
 
 ## Practical optimizations
 - Use when data is loaded once and rarely modified

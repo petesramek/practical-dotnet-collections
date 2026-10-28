@@ -49,16 +49,30 @@ When should you use a hash-based lookup vs scanning a list?
 
 A missing key is the worst case for a list, because the whole array is scanned. Source: [benchmarks/Lookup/FailedLookupBenchmark.cs](../../benchmarks/Lookup/FailedLookupBenchmark.cs). Run with `dotnet run -c Release -- --filter *FailedLookupBenchmark*`.
 
-| Method | N = 10 | N = 100 | N = 1,000 | N = 10,000 | N = 100,000 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| List.Contains (missing) | 1.9 ns | 14.1 ns | 148.8 ns | 1,604 ns | 12,544 ns |
-| HashSet.Contains (missing) | 4.7 ns | 3.0 ns | 3.3 ns | 3.0 ns | 3.1 ns |
-| Dictionary.ContainsKey (missing) | 2.6 ns | 2.5 ns | 3.8 ns | 3.0 ns | 3.4 ns |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Lookup.FailedLookupBenchmark-report-github.md).
 
-No allocations in any case. Short BenchmarkDotNet job (3 warmup, 8 iterations), Arm64, .NET 10.
+| Method                  | N      | Mean          | Error       | StdDev      | Allocated |
+|------------------------ |------- |--------------:|------------:|------------:|----------:|
+| **List_FailedLookup**       | **10**     |      **1.519 ns** |   **0.2498 ns** |   **0.1109 ns** |         **-** |
+| HashSet_FailedLookup    | 10     |      2.880 ns |   0.1771 ns |   0.0926 ns |         - |
+| Dictionary_FailedLookup | 10     |      2.493 ns |   0.0407 ns |   0.0213 ns |         - |
+| **List_FailedLookup**       | **100**    |     **18.989 ns** |   **0.3629 ns** |   **0.1898 ns** |         **-** |
+| HashSet_FailedLookup    | 100    |      2.490 ns |   0.0541 ns |   0.0283 ns |         - |
+| Dictionary_FailedLookup | 100    |      2.676 ns |   0.1694 ns |   0.0752 ns |         - |
+| **List_FailedLookup**       | **1000**   |    **155.684 ns** |   **4.1442 ns** |   **1.4779 ns** |         **-** |
+| HashSet_FailedLookup    | 1000   |      2.675 ns |   0.1092 ns |   0.0485 ns |         - |
+| Dictionary_FailedLookup | 1000   |      2.666 ns |   0.0983 ns |   0.0436 ns |         - |
+| **List_FailedLookup**       | **10000**  |  **1,254.955 ns** | **112.9401 ns** |  **59.0698 ns** |         **-** |
+| HashSet_FailedLookup    | 10000  |      2.986 ns |   2.5307 ns |   1.1236 ns |         - |
+| Dictionary_FailedLookup | 10000  |      2.662 ns |   0.3221 ns |   0.1430 ns |         - |
+| **List_FailedLookup**       | **100000** | **12,010.048 ns** | **676.3112 ns** | **353.7238 ns** |         **-** |
+| HashSet_FailedLookup    | 100000 |      2.648 ns |   0.6737 ns |   0.3524 ns |         - |
+| Dictionary_FailedLookup | 100000 |      2.940 ns |   1.0557 ns |   0.5521 ns |         - |
 
-- The list scan grows roughly linearly with N; the hash-based lookups stay around 3 ns.
-- At N = 10 the list was faster (1.9 ns vs 4.7 ns for `HashSet`), and the crossover is somewhere between 10 and 100 items for `int` keys. The error margin at N = 10 is large relative to the values, so treat that gap as approximate.
+No allocations were reported in these failed-lookup benchmarks.
+
+- The list scan grows with N, while the hash-based means remained around 2.5-3 ns across the measured sizes.
+- At N = 10, `List_FailedLookup` averaged 1.519 ns versus 2.880 ns for `HashSet_FailedLookup`; the Error ranges do not overlap in this run. At N = 100, the list mean was 18.989 ns versus 2.490 ns for HashSet, so the crossover is between the tested sizes 10 and 100 for these `int` keys.
 
 ---
 

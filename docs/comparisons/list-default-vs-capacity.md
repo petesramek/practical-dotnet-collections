@@ -13,7 +13,7 @@ When should you preallocate List capacity instead of relying on automatic resizi
 | Initial capacity | Small (0 → 4 → grows) | Fixed upfront |
 | Resizing | Multiple reallocations | None (if sized correctly) |
 | Memory allocation | Many allocations | Single allocation |
-| Performance | Slower for large builds | Faster (about 0.75x to 0.84x of the time at N >= 100) |
+| Performance | More resizing for growing lists | Lower mean through N = 10,000; N = 100,000 timing is inconclusive |
 
 ---
 
@@ -48,16 +48,26 @@ When should you preallocate List capacity instead of relying on automatic resizi
 
 Source: [benchmarks/Memory/ListCapacityBenchmark.cs](../../benchmarks/Memory/ListCapacityBenchmark.cs). Both variants create and fill the list inside the measured method, so the allocation of the list is included. Run with `dotnet run -c Release -- --filter *ListCapacityBenchmark*`.
 
-| Method | N | Mean | Ratio | Allocated |
-| :--- | :--- | :--- | :--- | :--- |
-| DefaultListAdd | 10 | 106.46 ns | 1.00 | 216 B |
-| PreallocatedListAdd | 10 | 55.96 ns | 0.53 | 96 B |
-| DefaultListAdd | 1000 | 5,771.81 ns | 1.00 | 8,424 B |
-| PreallocatedListAdd | 1000 | 4,147.45 ns | 0.75 | 4,056 B |
-| DefaultListAdd | 100000 | 1,422,181.93 ns | 1.00 | 1,049,072 B |
-| PreallocatedListAdd | 100000 | 1,176,335.29 ns | 0.84 | 400,097 B |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Memory.ListCapacityBenchmark-report-github.md).
 
-Short BenchmarkDotNet job (3 warmup, 8 iterations), Arm64, .NET 10. The time ratio is modest (roughly 15% to 25% less time); the allocation reduction is larger (about 60% less at N = 100,000).
+| Method              | N      | Mean            | Error          | StdDev         | Ratio | RatioSD | Gen0     | Gen1     | Gen2     | Allocated | Alloc Ratio |
+|-------------------- |------- |----------------:|---------------:|---------------:|------:|--------:|---------:|---------:|---------:|----------:|------------:|
+| **DefaultListAdd**      | **10**     |        **62.77 ns** |       **2.849 ns** |       **1.490 ns** |  **1.00** |    **0.03** |   **0.1032** |        **-** |        **-** |     **216 B** |        **1.00** |
+| PreallocatedListAdd | 10     |        32.18 ns |       2.159 ns |       0.959 ns |  0.51 |    0.02 |   0.0459 |        - |        - |      96 B |        0.44 |
+|                     |        |                 |                |                |       |         |          |          |          |           |             |
+| **DefaultListAdd**      | **100**    |       **389.61 ns** |       **6.884 ns** |       **3.056 ns** |  **1.00** |    **0.01** |   **0.5660** |        **-** |        **-** |    **1184 B** |        **1.00** |
+| PreallocatedListAdd | 100    |       291.21 ns |       3.213 ns |       1.680 ns |  0.75 |    0.01 |   0.2179 |        - |        - |     456 B |        0.39 |
+|                     |        |                 |                |                |       |         |          |          |          |           |             |
+| **DefaultListAdd**      | **1000**   |     **3,328.71 ns** |      **25.841 ns** |      **13.515 ns** |  **1.00** |    **0.01** |   **4.0207** |        **-** |        **-** |    **8424 B** |        **1.00** |
+| PreallocatedListAdd | 1000   |     2,929.09 ns |      76.592 ns |      34.007 ns |  0.88 |    0.01 |   1.9379 |        - |        - |    4056 B |        0.48 |
+|                     |        |                 |                |                |       |         |          |          |          |           |             |
+| **DefaultListAdd**      | **10000**  |    **33,267.52 ns** |   **1,131.640 ns** |     **591.870 ns** |  **1.00** |    **0.02** |  **62.4390** |        **-** |        **-** |  **131400 B** |        **1.00** |
+| PreallocatedListAdd | 10000  |    27,514.49 ns |     549.916 ns |     196.105 ns |  0.83 |    0.01 |  18.8599 |        - |        - |   40056 B |        0.30 |
+|                     |        |                 |                |                |       |         |          |          |          |           |             |
+| **DefaultListAdd**      | **100000** | **1,082,017.17 ns** | **428,487.145 ns** | **224,107.062 ns** |  **1.04** |    **0.29** | **285.1563** | **285.1563** | **285.1563** | **1049072 B** |        **1.00** |
+| PreallocatedListAdd | 100000 | 1,000,079.35 ns | 677,785.118 ns | 354,494.722 ns |  0.96 |    0.37 | 123.0469 | 123.0469 | 123.0469 |  400097 B |        0.38 |
+
+At N = 100,000, the default list allocated 1.05 MB versus 400 KB for the preallocated list (about 62% less). The timing Error margins are large and overlap at that size; use the smaller-N rows for clearer timing comparisons.
 
 ---
 

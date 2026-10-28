@@ -59,24 +59,23 @@ dotnet run -c Release -- --filter *ConcurrentBagBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ThreadLocalConcurrentBag** | 10000 | 128.0 us | 22.9492 | 22.7051 | 6.8359 | 114.41 KB |
-| **ThreadLocalListWithLock** | 10000 | 589.1 us | 34.1797 | - | - | 66.69 KB |
-| **WorkStealingConcurrentBag** | 10000 | 885.9 us | 25.3906 | 24.4141 | 7.8125 | 129.61 KB |
-| **WorkStealingConcurrentQueue** | 10000 | 2,475.0 us | 58.5938 | 11.7188 | - | 132.81 KB |
-| | | | | | | |
-| **ThreadLocalConcurrentBag** | 50000 | 547.0 us | 83.0078 | 82.0313 | 29.2969 | 482.52 KB |
-| **ThreadLocalListWithLock** | 50000 | 3,108.2 us | 113.2813 | 113.2813 | 113.2813 | 492.52 KB |
-| **WorkStealingConcurrentBag** | 50000 | 4,185.1 us | 78.1250 | 70.3125 | 31.2500 | 515.01 KB |
-| **WorkStealingConcurrentQueue** | 50000 | 13,227.4 us | 109.3750 | 109.3750 | 109.3750 | 517.78 KB |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Concurrency.ConcurrentBagBenchmark-report-github.md).
 
-Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10. Results depend on core count and scheduler behavior.
+| Method                      | N     | Mean        | Error     | StdDev    | Gen0     | Gen1     | Gen2     | Allocated |
+|---------------------------- |------ |------------:|----------:|----------:|---------:|---------:|---------:|----------:|
+| **ThreadLocalConcurrentBag**    | **10000** |    **120.1 μs** |  **16.01 μs** |   **7.11 μs** |  **25.5127** |  **25.3906** |   **3.7842** | **126.07 KB** |
+| ThreadLocalListWithLock     | 10000 |    579.4 μs |  81.80 μs |  42.78 μs |  33.2031 |        - |        - |  63.19 KB |
+| WorkStealingConcurrentBag   | 10000 |    774.3 μs | 179.01 μs |  93.62 μs |  25.3906 |  24.4141 |   2.9297 | 129.56 KB |
+| WorkStealingConcurrentQueue | 10000 |  2,245.0 μs | 167.33 μs |  87.51 μs |  58.5938 |  11.7188 |        - | 132.81 KB |
+| **ThreadLocalConcurrentBag**    | **50000** |    **454.1 μs** |  **58.49 μs** |  **30.59 μs** |  **85.9375** |  **83.9844** |  **31.2500** | **508.04 KB** |
+| ThreadLocalListWithLock     | 50000 |  3,470.5 μs | 219.05 μs |  97.26 μs | 105.4688 | 105.4688 | 105.4688 | 470.51 KB |
+| WorkStealingConcurrentBag   | 50000 |  4,238.2 μs | 666.07 μs | 348.37 μs |  78.1250 |  70.3125 |  15.6250 | 515.01 KB |
+| WorkStealingConcurrentQueue | 50000 | 12,437.6 μs | 625.99 μs | 327.40 μs | 109.3750 | 109.3750 | 109.3750 | 517.76 KB |
 
 ### Interpretation
 
-1. **Thread-local pattern**: when each thread consumes what it produced, ConcurrentBag was about 5.7x faster than a locked List<T> (547 us vs 3,108 us at N = 50,000). Each thread uses its own local storage, so there is little shared contention. This is the scenario the type is designed for.
-2. **Work-stealing pattern**: when producers fill the bag and different consumers drain it, ConcurrentBag has to steal from other threads' lists and is slower than in the thread-local case. In this benchmark it was still about 3x faster than ConcurrentQueue (4.2 ms vs 13.2 ms at N = 50,000). Consumers in both variants yield on empty, so part of that gap may reflect scheduling rather than the collections themselves.
+1. **Thread-local pattern**: when each thread consumes what it produced, the N = 50,000 mean for `ThreadLocalConcurrentBag` was 454 μs versus 3,471 μs for the locked list. Each thread uses its own local storage, so there is little shared contention; this is the scenario the type is designed for.
+2. **Work-stealing pattern**: when producers fill the bag and different consumers drain it, the bag must steal from other threads' lists. At N = 50,000, `WorkStealingConcurrentBag` averaged 4.24 ms versus 12.44 ms for `WorkStealingConcurrentQueue`; both timing rows include Error margins, and consumers yield on empty, so scheduling can affect the comparison.
 3. **No ordering**: ConcurrentBag makes no ordering promises. If you need FIFO or LIFO, use ConcurrentQueue<T> or ConcurrentStack<T> instead of trading correctness for speed.
 
 ## Practical optimizations

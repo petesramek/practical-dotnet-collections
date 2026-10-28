@@ -56,23 +56,23 @@ dotnet run -c Release -- --filter *Lookup.ReadOnlyDictionaryBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Allocated |
-| :--- | :--- | :--- | :--- | :--- |
-| **DictionaryLookup** | 1000 | 3.489 ns | - | - |
-| **ReadOnlyDictionaryLookup** | 1000 | 3.849 ns | - | - |
-| **IterateDictionaryForeach** | 1000 | 977.923 ns | - | - |
-| **IterateReadOnlyDictionaryForeach** | 1000 | 2,463.922 ns | 0.0229 | 48 B |
-| | | | | |
-| **DictionaryLookup** | 10000 | 3.718 ns | - | - |
-| **ReadOnlyDictionaryLookup** | 10000 | **4.079 ns** | - | - |
-| **IterateDictionaryForeach** | 10000 | **9,745.774 ns** | - | - |
-| **IterateReadOnlyDictionaryForeach** | 10000 | **24,756.497 ns** | - | **48 B** |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Lookup.ReadOnlyDictionaryBenchmark-report-github.md).
+
+| Method                           | N     | Mean          | Error         | StdDev      | Gen0   | Allocated |
+|--------------------------------- |------ |--------------:|--------------:|------------:|-------:|----------:|
+| **DictionaryLookup**                 | **1000**  |      **4.570 ns** |     **0.3263 ns** |   **0.1706 ns** |      **-** |         **-** |
+| ReadOnlyDictionaryLookup         | 1000  |      7.420 ns |     3.0771 ns |   1.6094 ns |      - |         - |
+| IterateDictionaryForeach         | 1000  |  1,187.709 ns |    13.5001 ns |   5.9941 ns |      - |         - |
+| IterateReadOnlyDictionaryForeach | 1000  |  3,138.183 ns |   225.7794 ns | 118.0870 ns | 0.0229 |      48 B |
+| **DictionaryLookup**                 | **10000** |      **4.486 ns** |     **0.3159 ns** |   **0.1652 ns** |      **-** |         **-** |
+| ReadOnlyDictionaryLookup         | 10000 |      6.295 ns |     1.8386 ns |   0.8163 ns |      - |         - |
+| IterateDictionaryForeach         | 10000 | 12,048.081 ns |   343.3509 ns | 152.4499 ns |      - |         - |
+| IterateReadOnlyDictionaryForeach | 10000 | 31,103.656 ns | 1,005.5211 ns | 525.9070 ns |      - |      48 B |
 
 ### Interpretation
 
-- **The Low-Overhead Lookup Result**: On pure key-based lookups (`ReadOnlyDictionaryLookup`), the wrapper introduces almost zero execution delay, processing queries in a flat **4.0 ns** compared to the raw dictionary's **3.7 ns** at N = 10,000. Because .NET routes lookups via a direct internal reference pointer delegate, your application gains complete API encapsulation with no measurable penalty on lookups.
-- **The Foreach Interface Trap**: Iterating a `ReadOnlyDictionary` using an entry loop (`IterateReadOnlyDictionaryForeach`) is a measurable performance pitfall. At N = 10,000, it takes a **24.7 microseconds**—making it **2.5x slower** than iterating the native dictionary. Because the wrapper hides the inner type definitions, the JIT compiler cannot optimize the path. It forces .NET to fallback to virtual `IEnumerable<KeyValuePair<T,K>>` method lookups and creates a **48-Byte** generic enumerator reference type allocation on the heap on every single run.
-- **The Struct Enumerator Edge**: The raw `IterateDictionaryForeach` track completes in just **9.7 microseconds** with zero heap allocations. When a loop interacts directly with a standard dictionary type, the C# compiler leverages a specialized, pre-compiled value-type struct enumerator (`Dictionary<TKey, TValue>.Enumerator`), which executes inline without heap tracking noise.
+- **Lookup cost**: at N = 10,000, `ReadOnlyDictionaryLookup` averaged **6.30 ns** versus **4.49 ns** for `DictionaryLookup`. Their Error ranges overlap, so this run does not establish a reliable lookup penalty.
+- **The foreach interface cost**: `IterateReadOnlyDictionaryForeach` averaged **31.1 us** at N = 10,000 versus **12.0 us** for `IterateDictionaryForeach`, and allocated 48 B. The direct dictionary enumeration allocated nothing in this run.
 
 ## Practical optimizations
 - Use at API boundaries

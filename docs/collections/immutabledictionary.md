@@ -58,25 +58,25 @@ dotnet run -c Release -- --filter *Memory.ImmutableDictionaryBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Gen 1 | Gen 2 | Allocated |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ImmutableDictionaryAdd** | 1000 | 261,056.853 ns | 286.1328 | - | - | 598,712 B |
-| **ImmutableDictionaryWithBuilderAdd** | 1000 | 129,912.802 ns | 26.6113 | - | - | 56,040 B |
-| **DictionaryAdd** | 1000 | 8,866.314 ns | 34.4696 | - | - | 73,168 B |
-| **ImmutableDictionaryLookup** | 1000 | 86.335 ns | - | - | - | - |
-| **DictionaryLookup** | 1000 | 4.150 ns | - | - | - | - |
-| | | | | | | |
-| **ImmutableDictionaryAdd** | 10000 | 3,637,559.914 ns | 1917.9688 | 640.6250 | 3.9063 | 7,882,553 B |
-| **ImmutableDictionaryWithBuilderAdd** | 10000 | 1,650,806.896 ns | 123.0469 | 68.3594 | - | 560,040 B |
-| **DictionaryAdd** | 10000 | 332,791.280 ns | 150.8789 | 54.1992 | 41.0156 | 673,201 B |
-| **ImmutableDictionaryLookup** | 10000 | 78.770 ns | - | - | - | - |
-| **DictionaryLookup** | 10000 | 4.209 ns | - | - | - | - |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Memory.ImmutableDictionaryBenchmark-report-github.md).
+
+| Method                            | N     | Mean             | Error           | StdDev          | Gen0      | Gen1     | Gen2    | Allocated |
+|---------------------------------- |------ |-----------------:|----------------:|----------------:|----------:|---------:|--------:|----------:|
+| **ImmutableDictionaryAdd**            | **1000**  |   **296,422.238 ns** |   **9,544.4261 ns** |   **4,237.7843 ns** |  **286.1328** |        **-** |       **-** |  **598712 B** |
+| ImmutableDictionaryWithBuilderAdd | 1000  |   156,239.530 ns |   1,215.5818 ns |     635.7728 ns |   26.6113 |        - |       - |   56040 B |
+| DictionaryAdd                     | 1000  |    11,824.197 ns |     947.1825 ns |     420.5549 ns |   34.4696 |        - |       - |   73168 B |
+| ImmutableDictionaryLookup         | 1000  |       128.098 ns |       9.2092 ns |       4.8166 ns |         - |        - |       - |         - |
+| DictionaryLookup                  | 1000  |         5.419 ns |       0.4656 ns |       0.2435 ns |         - |        - |       - |         - |
+| **ImmutableDictionaryAdd**            | **10000** | **4,897,166.260 ns** | **875,293.4180 ns** | **457,795.3824 ns** | **1851.5625** | **664.0625** |       **-** | **7882552 B** |
+| ImmutableDictionaryWithBuilderAdd | 10000 | 2,281,617.900 ns | 305,571.0190 ns | 159,819.5515 ns |  117.1875 |  66.4063 |       - |  560040 B |
+| DictionaryAdd                     | 10000 |   392,942.991 ns |  37,012.3263 ns |  19,358.1623 ns |  149.9023 |  53.7109 | 41.0156 |  673218 B |
+| ImmutableDictionaryLookup         | 10000 |       110.865 ns |      20.0456 ns |       8.9004 ns |         - |        - |       - |         - |
+| DictionaryLookup                  | 10000 |         5.149 ns |       0.0254 ns |       0.0091 ns |         - |        - |       - |         - |
 
 ### Interpretation
 
-- **The Item Loop Allocation Cost**: Appending 10,000 items individually using `.Add()` (`ImmutableDictionaryAdd`) is a significant performance pitfall. It takes **3.63 milliseconds** and pollutes the heap with **7.8 Megabytes** of garbage, forcing frequent Gen 1 and Gen 2 garbage collection cycles. This happens because the framework must rebuild and re-balance an entire binary tree route map on every single entry loop pass.
-- **The Builder Salvation Factor**: The `ImmutableDictionaryWithBuilderAdd` method mitigates this initialization penalty. Using the dedicated intermediate `Builder` pattern reduces allocation footprint down to **560 KB** (a **92.8% reduction**) and cuts execution time in half to 1.65 ms. The builder staging area stores items flatly, compiling the binary nodes only once when `.ToImmutable()` is invoked.
-- **The Lookup Read Penalty**: On lookup execution hot paths (`ImmutableDictionaryLookup`), the collection is **nearly 20x slower** than a standard `Dictionary<TKey, TValue>` (~78.7 ns vs ~4.2 ns). While a standard dictionary uses flat hash math calculations to hit bucket memory directly, `ImmutableDictionary` must actively step down through layers of pointer branches to find keys within its internal tree structures.
+- **The item loop allocation cost**: at N = 10,000, `ImmutableDictionaryAdd` averaged **4.90 ms** and allocated **7.88 MB**. The builder averaged **2.28 ms** and allocated **560 KB**, substantially reducing both costs in this run.
+- **Lookup cost**: at N = 10,000, `ImmutableDictionaryLookup` averaged **110.9 ns** versus **5.15 ns** for `DictionaryLookup`. The immutable lookup is much slower in this microbenchmark; consider whether immutability and safe sharing justify that cost for the workload.
 
 ## Practical optimizations
 - Use builders (ToBuilder) for bulk updates

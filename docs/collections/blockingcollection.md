@@ -56,28 +56,27 @@ dotnet run -c Release -- --filter *BlockingCollectionBenchmark*
 
 ### Results
 
-| Method | N | Mean | Gen 0 | Allocated |
-| :--- | :--- | :--- | :--- | :--- |
-| **ThroughputConcurrentQueue** | 10000 | 47.827 ms (median 29.474 ms) | - | 84.96 KB |
-| **ThroughputBlockingCollectionUnbounded** | 10000 | 9.248 ms | - | 79.15 KB |
-| **ThroughputBlockingCollectionBounded** | 10000 | 12.412 ms | 218.7500 | 414.29 KB |
-| **SlowConsumerConcurrentQueue** | 10000 | 237.267 ms | - | 132.81 KB |
-| **SlowConsumerBlockingCollection** | 10000 | 292.963 ms | 500.0000 | 1,622.21 KB |
-| | | | | |
-| **ThroughputConcurrentQueue** | 50000 | 27.901 ms | 93.7500 | 519.46 KB |
-| **ThroughputBlockingCollectionUnbounded** | 50000 | 52.966 ms | - | 306.73 KB |
-| **ThroughputBlockingCollectionBounded** | 50000 | 57.737 ms | 714.2857 | 1,690.45 KB |
-| **SlowConsumerConcurrentQueue** | 50000 | 1,298.541 ms | - | 517.73 KB |
-| **SlowConsumerBlockingCollection** | 50000 | 1,116.140 ms | - | 1,528.11 KB |
+Environment: BenchmarkDotNet 0.15.8; Windows 11 (10.0.26300.9711); virtual CPU `virt-10.0` at 1.00 GHz (1 CPU; 4 logical / 4 physical cores); .NET SDK 10.0.403; .NET 10.0.14, Arm64 RyuJIT (`armv8.0-a`); 3 warmup and 8 measurement iterations. [Full report](../../BenchmarkDotNet.Artifacts/results/PracticalDotNetCollections.Benchmarks.Concurrency.BlockingCollectionBenchmark-report-github.md).
 
-Numbers come from a short BenchmarkDotNet job (3 warmup, 8 iterations) on an Arm64 machine with .NET 10. Producers and consumers run on dedicated threads, and outcomes depend on core count and scheduler behavior. Several rows have error margins comparable to the mean, so treat differences below about 2x as inconclusive.
+| Method                                | N     | Mean        | Error      | StdDev    | Median       | Gen0      | Allocated  |
+|-------------------------------------- |------ |------------:|-----------:|----------:|-------------:|----------:|-----------:|
+| **ThroughputConcurrentQueue**             | **10000** |    **13.57 ms** |  **37.975 ms** | **13.542 ms** |     **8.408 ms** |   **31.2500** |   **78.14 KB** |
+| ThroughputBlockingCollectionUnbounded | 10000 |    11.35 ms |  10.905 ms |  5.704 ms |     9.945 ms |   46.8750 |   64.07 KB |
+| ThroughputBlockingCollectionBounded   | 10000 |    11.61 ms |   4.343 ms |  1.549 ms |    11.710 ms |  171.8750 |  329.87 KB |
+| SlowConsumerConcurrentQueue           | 10000 |   293.32 ms |  95.139 ms | 49.760 ms |   283.103 ms |         - |  132.81 KB |
+| SlowConsumerBlockingCollection        | 10000 |   210.69 ms |  17.827 ms |  7.915 ms |   211.919 ms |         - | 1511.81 KB |
+| **ThroughputConcurrentQueue**             | **50000** |    **40.71 ms** |  **31.343 ms** | **13.917 ms** |    **37.965 ms** |         **-** |  **263.01 KB** |
+| ThroughputBlockingCollectionUnbounded | 50000 |    49.52 ms |  16.076 ms |  8.408 ms |    50.141 ms |         - |  264.12 KB |
+| ThroughputBlockingCollectionBounded   | 50000 |    33.55 ms |   7.760 ms |  4.059 ms |    34.249 ms | 1000.0000 | 2324.12 KB |
+| SlowConsumerConcurrentQueue           | 50000 | 1,127.55 ms |  92.508 ms | 41.074 ms | 1,149.757 ms |         - |  517.73 KB |
+| SlowConsumerBlockingCollection        | 50000 | 1,065.13 ms | 143.553 ms | 75.081 ms | 1,029.394 ms | 2000.0000 | 4080.78 KB |
 
 ### Interpretation
 
-1. **Throughput is inconclusive**: ConcurrentQueue and BlockingCollection swap places between N = 10,000 and N = 50,000, and the ConcurrentQueue N = 10,000 row has a very large error margin. The benchmark consumers poll TryDequeue and yield on empty, which adds scheduling noise that a blocking consumer does not have. Do not pick one over the other based on raw throughput here.
-2. **Slow consumer is consumer-bound**: elapsed time (about 1.1 to 1.3 s at N = 50,000) is determined by the consumer's work, not by the collection. Compare allocation and memory behavior instead.
+1. **Throughput is inconclusive**: the mean ordering changes with N, and several Error margins are large relative to their means. Consumers poll `TryDequeue` and yield when empty, adding scheduling noise that a blocking consumer does not have; do not choose a collection based on these timings alone.
+2. **Slow consumer is consumer-bound**: at N = 50,000, both slow-consumer means are around one second and their Error margins overlap. Compare allocation and memory behavior as well.
 3. **Bounded capacity**: BlockingCollection with a bound limits how many items are in flight, which is its main reason to exist. ConcurrentQueue has no bound, so a fast producer can grow it without limit. The benchmark measures run time and allocations, not peak queue length.
-4. **Allocation**: the bounded variant allocated about 5x more than the unbounded one at N = 10,000 (414 KB vs 79 KB), reflecting the blocking and wake-up bookkeeping.
+4. **Allocation**: the bounded variant allocated more than the unbounded variant in both tested sizes (330 KB vs 64 KB at N = 10,000; 2.3 MB vs 264 KB at N = 50,000). The benchmark measures allocated bytes, not peak queue length.
 
 ## Practical optimizations
 - **Always provide a bounded capacity**: Initializing without an upper bound disables backpressure entirely, making it behave like a standard concurrent queue while still carrying the overhead of internal synchronization primitives.
